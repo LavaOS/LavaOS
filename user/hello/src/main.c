@@ -1,5 +1,5 @@
 #include <stdio.h>
 int main() {
-    printf("Hello from /user/hello!\n");
+    printf("Hello from LavaOS!\n");
     return 0;
 }

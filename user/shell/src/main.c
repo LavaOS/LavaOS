@@ -174,7 +174,7 @@ void run_cmd(const char** argv, size_t argc) {
     if(e != 0) printf("%s exited with: %d\n", argv[0], (int)e);
 }
 int main() {
-    printf("Started MinOS shell\n");
+    printf("LavaShell Started succesfuly\n");
     Arena arena={0};
     char* linebuf = malloc(LINEBUF_MAX);
     intptr_t e = 0;
@@ -193,7 +193,7 @@ int main() {
     int exit_code = 0;
 
     while(running) {
-        printf("%s > ", cwd);
+        printf("%s LavaShell >> ", cwd);
         arena_reset(&arena);
         arg_count=0;
         fflush(stdout);
