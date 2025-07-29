@@ -10,7 +10,6 @@ const char* projects[] = {
     "cat",
     "dynld",
     "echo",
-    "fbtest",
     "gtnet",
     "hello",
     "hello_window",
@@ -22,7 +21,7 @@ const char* projects[] = {
     "shell",
     "simpdump",
     "shutdown",
-    // "tinycc",
+    "tinycc",
     "wm",
     "miniterm",
     "doomgeneric"
