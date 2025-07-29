@@ -11,14 +11,12 @@ build the compiler:
 ```sh
 gcc nob.c -o nob
 ```
-build the system:
+build and run:
 ```sh
-./nob build
+./nob bruh
 ```
-run with:
-```sh
-./nob run
-```
+
+## WARNING : On the first time, the nob.c will compile a huge custom gcc, make sure you have enough ram and swapfile :)
 
 ## Contributing
 
