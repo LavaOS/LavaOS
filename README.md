@@ -1,45 +1,85 @@
-# LavaOS
-LavaOS it's an free, open source unix-like operating system, forked of MinOS
+# LavaOS 🔥
 
-## Build
-get source code (On linux/WSL/mac/bsd):
-```sh
+**LavaOS** is a free and open-source Unix-like operating system, forked from [MinOS](https://github.com/Dcraftbg/MinOS).  
+It aims to be minimalist, hackable, and blazing fast — powered by a custom bootstrapping compiler (`nob.c`) and a raw, low-level design.
+
+## 🚀 Features
+
+- 🔥 Forked from MinOS with key improvements
+- 🧠 Built using a custom bootstrapped compiler (`nob.c`)
+- 🧩 Modular, simple, and readable codebase
+- 🧑‍💻 Designed for OSDev hobbyists
+- 💾 Light RAM/Swap-aware build system
+- 🧪 Experimental but actively maintained
+
+---
+
+## 🔧 Getting Started
+
+### Clone the source (Linux / WSL / macOS / BSD)
+
+```bash
 git clone https://github.com/jrifuoue/LavaOS.git
 cd LavaOS
 ```
-> (on windows, you can download the source code .zip file and the uncompress it)
+On Windows, download the .zip file and extract it manually.
 
-build the compiler (linux/WSL):
-```sh
+### 🛠 Build the Compiler (nob)
+
+Linux / WSL:
+
+```bash
 gcc nob.c -o nob
 ```
-build the compiler (mac/bsd):
-```sh
+
+macOS / BSD:
+
+```bash
 clang nob.c -o nob
 ```
-build the compiler (windows | you need visual studio with c/c++ support):
-```sh
+
+Windows (Visual Studio with C/C++ tools):
+
+```powershell
 cl nob.c
 ```
-build system and run(linux/WSL/mac/bsd):
-```sh
+
+### ⚙️ Build and Run the System
+
+Linux / WSL / macOS / BSD:
+
+```bash
 ./nob bruh
 ```
-build system and run(windows):
-```sh
-nob bruh
+
+Windows:
+
+```
+nob build
 ```
 
+Windows doesn't support qemu, after build, put the iso (path: LavaOS\bin\OS.iso) into virtualbox or vmware
 
-## WARNING : On the first time, the nob.c will compile a huge custom gcc, make sure you have enough ram and swapfile :)
+## ⚠️ Heads Up
 
-## Contributing
+The first run will compile a full custom GCC toolchain inside your environment.
+Make sure you have enough RAM + swap (recommendation: at least 4GB RAM + 8GB swap) to avoid out-of-memory errors.
+Building may temporarily consume 10–60 GB of space depending on your setup.
 
-I'm open to contributions!
+## 🤝 Contributing
 
-I love when the community helps in making something good, but I have to point out a few things.
+Contributions are more than welcome!
 
-Please don't make contributions that:
-- Make something intentionally more obscure
-- Add a huge dependency without much reasoning
-- Implement or change an enormous part of the code and its structure (unless justified)
+Feel free to open issues, PRs, or discussions. But please:
+
+    Don’t intentionally obfuscate code
+
+    Avoid adding heavy dependencies without solid reasoning
+
+    Avoid large-scale rewrites unless they're clearly beneficial
+
+    Let's keep LavaOS light, fun, and educational — together 💡
+
+## 📜 License
+
+MIT License — see `LICENSE.md` file for full text.
