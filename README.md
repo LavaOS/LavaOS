@@ -2,13 +2,14 @@
 LavaOS it's an free, open source unix-like operating system, forked of MinOS
 
 ## Build
-get source code (On linux/bsd/mac):
+get source code (On linux/WSL/mac/bsd):
 ```sh
 git clone https://github.com/jrifuoue/LavaOS.git
 cd LavaOS
 ```
-(on windows, you can download the source code .zip file and the uncompress it)
-build the compiler (linux):
+> (on windows, you can download the source code .zip file and the uncompress it)
+
+build the compiler (linux/WSL):
 ```sh
 gcc nob.c -o nob
 ```
@@ -20,7 +21,7 @@ build the compiler (windows | you need visual studio with c/c++ support):
 ```sh
 cl nob.c
 ```
-build system and run(linux/mac/bsd):
+build system and run(linux/WSL/mac/bsd):
 ```sh
 ./nob bruh
 ```
