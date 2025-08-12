@@ -6,6 +6,6 @@ static inline void outw(uint16_t port, uint16_t value) {
 }
 
 int main() {
-    outw(0x604, 0x2000); // ACPI shutdown for QEMU
+    outw(0x0604, 0x2000); // ACPI shutdown for QEMU
     return 0;
 }
