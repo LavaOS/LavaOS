@@ -84,7 +84,7 @@ static bool run(Build* build, Cmd* cmd) {
         "-smp", "2",
         "-m", "128",
         "-cdrom", "./bin/OS.iso",
-	"-machine", "type=q35,acpi=on",
+	"-device", "isa-debug-exit,iobase=0xf4,iosize=0x04",
     );
     if(build->uefi) {
         const char* ovmf = getenv("OVMF");

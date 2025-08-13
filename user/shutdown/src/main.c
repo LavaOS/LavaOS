@@ -2,6 +2,5 @@
 #include <io.h>
 
 int main() {
-    outw(0x604, 0x2000);
-    return 0;
+    outw(0xF4, 0x0000);
 }
