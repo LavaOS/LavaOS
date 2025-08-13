@@ -6,10 +6,12 @@
 const char* projects[] = {
     "libwm",
     "libpluto",
+    "MinSDL",
     "ansi_test",
     "cat",
     "dynld",
     "echo",
+    "fbtest",
     "gtnet",
     "hello",
     "hello_window",

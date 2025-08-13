@@ -1,6 +1,7 @@
 #include <minos/sysstd.h>
 #include <minos/fb/fb.h>
 #include <minos/status.h>
+#include <sys/mman.h>
 #include <stdio.h>
 #define STBI_NO_FAILURE_STRINGS
 #define STBI_NO_THREAD_LOCALS
@@ -25,7 +26,7 @@ typedef struct {
 intptr_t load(const char* path, Buf* res) {
     intptr_t e;
     uintptr_t fd;
-    if((e=open(path, MODE_READ, 0)) < 0) {
+    if((e=open(path, O_RDONLY)) < 0) {
         fprintf(stderr, "Failed to open `%s`: %s\n", path, status_str(e));
         return e;
     }
@@ -90,7 +91,7 @@ int main(int argc, const char** argv) {
         free(img_buf.data);
         return 1;
     }
-    if((e=open(fbpath, MODE_READ | MODE_WRITE, 0)) < 0) {
+    if((e=open(fbpath, O_RDWR)) < 0) {
         fprintf(stderr, "ERROR: Failed to open %s: %s\n", fbpath, status_str(e));
         goto err_fb;
     }
@@ -103,8 +104,10 @@ int main(int argc, const char** argv) {
     }
     printf("Framebuffer is %zux%zu pixels (%zu bits per pixel)\n", (size_t)stats.width, (size_t)stats.height, (size_t)stats.bpp);
     uint32_t* pixels;
-    if((e=mmap(fb, (void**)&pixels, 0)) < 0) {
-        fprintf(stderr, "ERROR: Failed to mmap on fb: %s\n", status_str(e));
+    // FIXME: size of the Framebuffer in bytes
+    pixels = mmap(NULL, 0, PROT_WRITE, MAP_PRIVATE, fb, 0);
+    if(pixels == MAP_FAILED) {
+        fprintf(stderr, "ERROR: Failed to mmap on fb: %s\n", strerror(errno));
         close(fb);
         return 1;
     }

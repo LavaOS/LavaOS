@@ -36,10 +36,9 @@ int main() {
 }
 void _start(int argc, const char** argv, int envc, const char** envv) {
     intptr_t e;
-    if((e = open("/devices/tty0", MODE_WRITE | MODE_READ, 0)) < 0) {
+    if((e = open("/devices/tty0", O_RDWR)) < 0) {
         exit(-e); 
     }
-    _libc_internal_init_heap();
     _libc_init_environ(envv, envc);
     _libc_init_streams();
     fprintf(stderr, "\033[2J\033[H");

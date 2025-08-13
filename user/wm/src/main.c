@@ -12,6 +12,7 @@
 #include <minos/status.h>
 #include <minos/fb/fb.h>
 #include <minos/mouse.h>
+#include <collections/list.h>
 #include <stdexec.h>
 #include "darray.h"
 
@@ -197,7 +198,7 @@ static void draw_image_no_alpha(const Framebuffer* fb, const Image* image, size_
 #include <stb_image.h>
 // Utility
 static uint32_t abgr_to_argb(uint32_t a) {
-uint8_t alpha = (a >> 24) & 0xFF; 
+    uint8_t alpha = (a >> 24) & 0xFF; 
     uint8_t blue = (a >> 16) & 0xFF;   
     uint8_t green = (a >> 8) & 0xFF; 
     uint8_t red = a & 0xFF;            
@@ -442,7 +443,7 @@ static void load_icons(void) {
     load_image_required("./res/Hide_hover.png", &icon_hide_hover);
 }
 static intptr_t load_framebuffer(const char* path, Framebuffer* fb) {
-    intptr_t e = open(path, MODE_WRITE, 0);
+    intptr_t e = open(path, O_WRONLY);
     if(e < 0) return e;
     uintptr_t fb_handle = (uintptr_t)e;
     FbStats stats;
@@ -466,10 +467,11 @@ static intptr_t load_framebuffer(const char* path, Framebuffer* fb) {
         return -NOT_ENOUGH_MEM;
     }
     memset(fb->pixels, 0, sizeof(*fb->pixels));
-    if((e=mmap(fb_handle, (void*)&fb->hw_pixels, 0)) < 0) {
+    fb->hw_pixels = mmap(NULL, 0, PROT_WRITE, MAP_PRIVATE, fb_handle, 0);
+    if(fb->hw_pixels == MAP_FAILED) {
         free(fb->pixels);
         close(fb_handle);
-        return e;
+        return -1;
     }
     close(fb_handle);
     // For debug testing purposes.
@@ -614,6 +616,7 @@ void client_thread(void* client_void) {
             // window->clear_color = 0xFF00FF00;
             Rectangle content = window_get_content_rect(window);
             window->content = realloc(window->content, (content.r-content.l) * (content.b-content.t) * sizeof(uint32_t));
+            assert(window->content && "Ran out of memory");
             memset(window->content, 0, (content.r-content.l) * (content.b-content.t) * sizeof(uint32_t));
             size_t width = (content.r-content.l);
             size_t height = (content.b-content.t);
@@ -809,7 +812,7 @@ uintptr_t run(size_t applet_number, const char** argv, size_t argc) {
         close(STDOUT_FILENO);
         char pathbuf[120];
         sprintf(pathbuf, "/applet%zu.log", applet_number);
-        assert(open(pathbuf, MODE_READ | MODE_WRITE, O_CREAT) >= 0);
+        assert(open(pathbuf, O_RDWR | O_CREAT) >= 0);
 #else
         (void)applet_number;
 #endif
@@ -947,7 +950,7 @@ void handle_mouse_event(int what, int x, int y, int button) {
 }
 void mouse_thread(void*) {
     intptr_t e;
-    if((e=open("/devices/mouse", MODE_READ, 0)) < 0) {
+    if((e=open("/devices/mouse", O_RDONLY)) < 0) {
         error("Failed to open mouse: %s", status_str(e));
         return;
     }
@@ -1051,7 +1054,7 @@ static int key_unicode(Keyboard* keyboard, uint16_t code) {
 
 void keyboard_thread(void*) { 
     intptr_t e;
-    if((e=open("/devices/keyboard", MODE_READ, 0)) < 0) {
+    if((e=open("/devices/keyboard", O_RDONLY)) < 0) {
         error("Failed to open keyboard: %s", status_str(e));
         return;
     }

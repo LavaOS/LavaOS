@@ -5,6 +5,7 @@ static bool walk_directory(
     File_Paths* dirs,
     File_Paths* c_sources,
     File_Paths* nasm_sources,
+    File_Paths* gen_sources,
     const char* path
 ) {
     DIR *dir = opendir(path);
@@ -15,30 +16,45 @@ static bool walk_directory(
     errno = 0;
     struct dirent *ent;
     while((ent = readdir(dir))) {
-        if(strcmp(ent->d_name, "..") == 0 || strcmp(ent->d_name, ".") == 0) continue;
-        const char* fext = nob_get_ext(ent->d_name);
+        if(*ent->d_name == '.') continue;
         size_t temp = nob_temp_save();
         const char* p = nob_temp_sprintf("%s/%s", path, ent->d_name); 
+        String_View sv = sv_from_cstr(p);
         Nob_File_Type type = nob_get_file_type(p);
         if(type == NOB_FILE_DIRECTORY) {
             da_append(dirs, p);
-            if(!walk_directory(dirs, c_sources, nasm_sources, p)) {
+            if(!walk_directory(dirs, c_sources, nasm_sources, gen_sources, p)) {
                 closedir(dir);
                 return false;
             }
             continue;
         }
-        if(strcmp(fext, "c") == 0 || strcmp(fext, "nasm") == 0) {
-            if(strcmp(fext, "c") == 0) 
-                nob_da_append(c_sources, p);
-            else if(strcmp(fext, "nasm") == 0)
-                nob_da_append(nasm_sources, p);
-            continue;
+        if(sv_end_with(sv, ".gen.c")) {
+            nob_da_append(gen_sources, p);
+        } else if(sv_end_with(sv, ".c")) {
+            nob_da_append(c_sources, p);
+        } else if(sv_end_with(sv, ".nasm")) {
+            nob_da_append(nasm_sources, p);
+        } else {
+            nob_temp_rewind(temp);
         }
-        nob_temp_rewind(temp);
     }
     closedir(dir);
     return true;
+}
+
+#define cstr_rem_suffix(__src, suffix) (int)(strlen(__src) - strlen(suffix)), (__src)
+
+const char* inc_dirs[] = {
+    "shared/include", 
+    "src",
+    "vendor/limine",
+    "vendor/stb",
+};
+static void append_inc_dirs(Cmd* cmd) {
+    for(size_t i = 0; i < ARRAY_LEN(inc_dirs); ++i) {
+        cmd_append(cmd, "-I", inc_dirs[i]);
+    }
 }
 int main(int argc, char** argv) {
     NOB_GO_REBUILD_URSELF(argc, argv);
@@ -55,10 +71,11 @@ int main(int argc, char** argv) {
     File_Paths dirs = { 0 };
     File_Paths c_sources = { 0 };
     File_Paths nasm_sources = { 0 };
+    File_Paths gen_sources = { 0 }; 
 
     size_t src_dir = strlen("src/");
-    if(!walk_directory(&dirs, &c_sources, &nasm_sources, "src")) return 1;
-    Nob_File_Paths objs = { 0 };
+    if(!walk_directory(&dirs, &c_sources, &nasm_sources, &gen_sources, "src")) return 1;
+    File_Paths objs = { 0 };
     String_Builder stb = { 0 };
     File_Paths pathb = { 0 };
     for(size_t i = 0; i < dirs.count; ++i) {
@@ -68,23 +85,48 @@ int main(int argc, char** argv) {
         nob_temp_rewind(temp);
     }
     Cmd cmd = { 0 };
+    for(size_t i = 0; i < gen_sources.count; ++i) {
+        const char* src = gen_sources.items[i];
+        const char* out = temp_sprintf("%s/kernel/%.*s", bindir, cstr_rem_suffix(src + src_dir, ".c"));
+        if(nob_c_needs_rebuild1(&stb, &pathb, out, src)) {
+            cmd_append(&cmd, NOB_REBUILD_URSELF(out, src), "-O1", "-MMD");
+            append_inc_dirs(&cmd);
+            if(!cmd_run_sync_and_reset(&cmd)) return 1;
+        }
+        const char* gen_file = temp_sprintf("%.*s", cstr_rem_suffix(src, ".gen.c"));
+        if(!nob_needs_rebuild1(gen_file, src)) continue;
+        nob_log(NOB_INFO, "Regenerating %s", gen_file);
+        Fd fd = fd_open_for_write(gen_file);
+        if(fd == -NOB_INVALID_FD) {
+            nob_log(NOB_ERROR, "Failed to open %s", gen_file);
+        }
+        cmd_append(&cmd, out);
+        // TODO: run in that directory
+        if(!cmd_run_sync_redirect_and_reset(&cmd, (Cmd_Redirect){ .fdout = &fd })) {
+            nob_log(NOB_ERROR, "FAILED to generate %s (using %s)", gen_file, src);
+            fd_close(fd);
+        }
+        fd_close(fd);
+    }
+
     for(size_t i = 0; i < nasm_sources.count; ++i) {
         const char* src = nasm_sources.items[i];
-        const char* out = nob_temp_sprintf("%s/kernel/%.*s.o", bindir, (int)(strlen(src + 4)-5), src + 4);
+        const char* out = nob_temp_sprintf("%s/kernel/%s.o", bindir, src + src_dir);
+        const char* md = nob_temp_sprintf("%s/kernel/%s.d", bindir, src + src_dir);
         da_append(&objs, out);
-        // TODO: smart rebuilding for nasm maybe
-        if(nob_needs_rebuild1(out, src) == 0) continue;
+        if(nob_c_needs_rebuild1(&stb, &pathb, out, src) == 0) continue;
         const char* include = nob_temp_sprintf("%.*s", (int)(nob_path_name(src)-src), src);
         cmd_append(&cmd, "nasm");
         cmd_append(&cmd, "-I", include); 
         cmd_append(&cmd, "-f", "elf64");
+        cmd_append(&cmd, "-MD", md);
         cmd_append(&cmd, src);
         cmd_append(&cmd, "-o", out);
         if(!nob_cmd_run_sync_and_reset(&cmd)) return 1;
     }
     for(size_t i = 0; i < c_sources.count; ++i) {
         const char* src = c_sources.items[i];
-        const char* out = nob_temp_sprintf("%s/kernel/%.*s.o", bindir, (int)(strlen(src + 4)-2), src + 4);
+        const char* out = nob_temp_sprintf("%s/kernel/%s.o", bindir, src + src_dir);
         da_append(&objs, out);
         if(!nob_c_needs_rebuild1(&stb, &pathb, out, src)) continue;
         cmd_append(&cmd, cc);
@@ -108,11 +150,8 @@ int main(int argc, char** argv) {
             "-mno-sse", "-mno-sse2",
             "-mno-3dnow",
             "-fPIC",
-            "-I", "shared/include",
-            "-Isrc",
         );
-        cmd_append(&cmd, "-I", "vendor/limine");
-        cmd_append(&cmd, "-I", "vendor/stb");
+        append_inc_dirs(&cmd);
         cmd_append(&cmd, "-c", src, "-o", out);
         if(!nob_cmd_run_sync_and_reset(&cmd)) {
             size_t temp = nob_temp_save();
@@ -128,13 +167,15 @@ int main(int argc, char** argv) {
     dirs.count = 0;
     c_sources.count = 0;
     nasm_sources.count = 0;
+    gen_sources.count = 0;
     src_dir = strlen("shared/src/");
-    if(!walk_directory(&dirs, &c_sources, &nasm_sources, "shared/src")) return 1;
+    if(!walk_directory(&dirs, &c_sources, &nasm_sources, &gen_sources, "shared/src")) return 1;
     assert(dirs.count == 0 && "Update shared");
+    assert(gen_sources.count == 0 && "Update shared");
     assert(nasm_sources.count == 0 && "Update shared");
     for(size_t i = 0; i < c_sources.count; ++i) {
         const char* src = c_sources.items[i];
-        const char* out = nob_temp_sprintf("%s/shared/%.*s.o", bindir, (int)(strlen(src + src_dir)-2), src + src_dir);
+        const char* out = nob_temp_sprintf("%s/shared/%.*s.o", bindir, cstr_rem_suffix(src + src_dir, ".c"));
         da_append(&objs, out);
         if(!nob_c_needs_rebuild1(&stb, &pathb, out, src)) continue;
         cmd_append(&cmd, cc);
