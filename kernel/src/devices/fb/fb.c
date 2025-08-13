@@ -40,8 +40,7 @@ static intptr_t fb_mmap(Inode* file, MmapContext* context, void** addr, size_t s
     size_t pages = PAGE_ALIGN_UP(device->fb.height*device->fb.pitch_bytes)/PAGE_SIZE;
     paddr_t phys = virt_to_phys(kernel.pml4, (uintptr_t)device->fb.addr);
     if(size_pages > 0 && size_pages != pages) return -SIZE_MISMATCH;
-    uint16_t rflags = 0;
-    pageflags_t pflags = 
+    pageflags_t flags = 
         KERNEL_PFLAG_USER |
         KERNEL_PTYPE_USER |
         KERNEL_PFLAG_PRESENT |
@@ -49,14 +48,8 @@ static intptr_t fb_mmap(Inode* file, MmapContext* context, void** addr, size_t s
         KERNEL_PFLAG_WRITE |
         KERNEL_PFLAG_WRITE_COMBINE;
 
-    if(file->mode & MODE_WRITE) {
-        pflags |= KERNEL_PFLAG_WRITE;
-        rflags |= MEMREG_WRITE;
-    }
-
     MemoryRegion* region = memregion_new(
-        rflags,
-        pflags,
+        flags,
         0, 0
     ); 
     if(!region) return -NOT_ENOUGH_MEM;
@@ -66,13 +59,13 @@ static intptr_t fb_mmap(Inode* file, MmapContext* context, void** addr, size_t s
         return -NOT_ENOUGH_MEM;
     }
     // FIXME: Consider taking into consideration *addr
-    MemoryList* insert_into = memlist_find_available(context->memlist, region, (void*)current_task()->image.eoe, pages, pages);
+    MemoryList* insert_into = memlist_find_available(context->memlist, region, (void*)current_task()->eoe, pages, pages);
     if(!insert_into) {
         e=-NOT_ENOUGH_MEM;
         goto err_no_insert_point;
     }
     *addr = (void*)region->address;
-    if(!page_mmap(context->page_table, phys, region->address, pages, pflags)) {
+    if(!page_mmap(context->page_table, phys, region->address, pages, flags)) {
         e=-NOT_ENOUGH_MEM;
         goto mmap_fail;
     }

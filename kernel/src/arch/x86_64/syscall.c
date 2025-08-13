@@ -7,14 +7,13 @@
 #include "log.h"
 #include "benchmark.h"
 #include "kernel.h"
-#include "arch/x86_64/idt.h"
+#include "idt.h"
 #include <minos/heap.h>
 #include <minos/time.h>
+#include <minos/mmap.h>
 #include "mem/shared_mem.h"
+#include "task_regs.h"
 
-void init_syscalls() {
-    idt_register(0x80, syscall_base, IDT_SOFTWARE_TYPE);
-}
 static intptr_t parse_path(Process* process, Path* res, const char* path) {
     switch(path[0]) {
     case '/':
@@ -32,7 +31,7 @@ static intptr_t parse_path(Process* process, Path* res, const char* path) {
 #define strace(fmt, ...) ktrace("P%zu:T%zu "fmt, current_process()->id, current_task()->id, __VA_ARGS__)
 #define strace1(fmt)     ktrace("P%zu:T%zu "fmt, current_process()->id, current_task()->id)
 // TODO: Safety features like copy_to_userspace, copy_from_userspace
-intptr_t sys_open(const char* path, fmode_t mode, oflags_t flags) {
+intptr_t sys_open(const char* path, oflags_t flags) {
 #ifdef CONFIG_LOG_SYSCALLS
     strace("sys_open(\"%s\", %d, %d)", path, (int)mode, (int)flags);
 #endif
@@ -47,9 +46,7 @@ intptr_t sys_open(const char* path, fmode_t mode, oflags_t flags) {
     Inode* inode;
     if((e=vfs_find(&p, &inode)) < 0) {
         if(e == -NOT_FOUND && flags & O_CREAT) {
-            // TODO: Consider maybe adding Inode** to creat
-            if((e=vfs_creat(&p, flags & O_DIRECTORY)) < 0) return e;
-            if((e=vfs_find(&p, &inode)) < 0) return e;
+            if((e=vfs_creat(&p, flags & O_DIRECTORY, &inode)) < 0) return e;
             goto found;
         }
         resource_remove(current->resources, id);
@@ -72,6 +69,7 @@ intptr_t sys_write(uintptr_t handle, const void* buf, size_t size) {
     Process* current = current_process();
     Resource* res = resource_find_by_id(current->resources, handle);
     if(!res) return -INVALID_HANDLE;
+    if(!(res->flags & O_WRITE)) return -PERMISION_DENIED;
     intptr_t e;
     if((e=inode_write(res->inode, buf, size, res->offset)) < 0) return e;
     res->offset += e;
@@ -85,6 +83,7 @@ intptr_t sys_get_dir_entries(uintptr_t handle, void* buf, size_t size) {
     Process* current = current_process();
     Resource* res = resource_find_by_id(current->resources, handle);
     if(!res) return -INVALID_HANDLE;
+    if(!(res->flags & O_READ)) return -PERMISION_DENIED;
     intptr_t e;
     size_t read_bytes;
     if((e=inode_get_dir_entries(res->inode, buf, size, res->offset, &read_bytes)) < 0) return e;
@@ -98,6 +97,7 @@ intptr_t sys_read(uintptr_t handle, void* buf, size_t size) {
     Process* current = current_process();
     Resource* res = resource_find_by_id(current->resources, handle);
     if(!res) return -INVALID_HANDLE;
+    if(!(res->flags & O_READ)) return -PERMISION_DENIED;
     intptr_t e;
 
     if(!(res->flags & O_NOBLOCK) && !inode_is_readable(res->inode)) block_is_readable(current_task(), res->inode);
@@ -116,21 +116,66 @@ intptr_t sys_ioctl(uintptr_t handle, Iop op, void* arg) {
     return inode_ioctl(res->inode, op, arg);
 }
 
-intptr_t sys_mmap(uintptr_t handle, void** addr, size_t size) {
+intptr_t sys_mmap(void** addr_ptr, size_t length, uint32_t prot, uint32_t flags, uintptr_t fd, off_t offset) {
 #ifdef CONFIG_LOG_SYSCALLS
     strace("sys_mmap(%lu, %p, %zu)", handle, addr, size);
 #endif
-    Process* current = current_process();
+    Process* process = current_process();
     Task* task = current_task();
-    Resource* res = resource_find_by_id(current->resources, handle);
-    if(!res) return -INVALID_HANDLE;
-    MmapContext context = {
-        .page_table = task->image.cr3,
-        .memlist = &task->image.memlist
-    };
-    intptr_t e = inode_mmap(res->inode, &context, addr, size);
-    if(e < 0) return e;
-    invalidate_pages(*addr, PAGE_ALIGN_UP(size)/PAGE_SIZE);
+    void* addr = *addr_ptr;
+    intptr_t e = 0;
+    if(flags & MAP_ANONYMOUS) {
+        pageflags_t pageflags = KERNEL_PFLAG_USER | KERNEL_PTYPE_USER |
+                                KERNEL_PFLAG_PRESENT | KERNEL_PFLAG_EXEC_DISABLE;
+        if(prot & PROT_WRITE) {
+            pageflags |= KERNEL_PFLAG_WRITE;
+        }
+        MemoryRegion* region = memregion_new(pageflags, 0, 0);
+        if(!region) return -NOT_ENOUGH_MEM;
+        MemoryList* list = memlist_new(region);
+        if(!list) {
+            memregion_drop(region, NULL);
+            return -NOT_ENOUGH_MEM;
+        }
+        size_t pages_min = PAGE_ALIGN_UP(length) / PAGE_SIZE;
+        size_t pages_max = pages_min;
+        if((flags & MAP_FIXED_NOREPLACE) || (flags & MAP_FIXED)) pages_max = 0xFFFFFFFFFFFFFLL;
+        if(addr == NULL) addr = (void*)task->eoe;
+        // FIXME: Region must be shared between all tasks and must be available in all tasks
+        MemoryList* insert_into = memlist_find_available(&task->memlist, region, addr, pages_min, pages_max);
+        if(!insert_into) {
+            memlist_dealloc(list, NULL);
+            return -NOT_ENOUGH_MEM;
+        }
+        // TODO: differentiate fixed
+        if((flags & MAP_FIXED_NOREPLACE) || (flags & MAP_FIXED)) {
+            if(region->address > (uintptr_t)addr || region->address + (region->pages*PAGE_SIZE) < ((uintptr_t)addr + pages_min * PAGE_SIZE)) {
+                memlist_dealloc(list, NULL);
+                return -VIRTUAL_SPACE_OCCUPIED;
+            }
+            region->address = (uintptr_t)addr;
+            region->pages = pages_min;
+        }
+        if(!page_alloc(task->cr3, region->address, region->pages, region->pageflags)) {
+            memlist_dealloc(list, NULL);
+            return -NOT_ENOUGH_MEM;
+        }
+        invalidate_pages((void*)region->address, region->pages);
+        list_append(&list->list, &insert_into->list);
+        addr = (void*)region->address;
+    } else {
+        // FIXME: don't just completely ignore flags
+        Resource* res = resource_find_by_id(process->resources, fd);
+        if(!res) return -INVALID_HANDLE;
+        MmapContext context = {
+            .page_table = task->cr3,
+            .memlist = &task->memlist
+        };
+        intptr_t e = inode_mmap(res->inode, &context, &addr, PAGE_ALIGN_UP(length) / PAGE_SIZE);
+        if(e < 0) return e;
+        invalidate_pages(addr, PAGE_ALIGN_UP(length)/PAGE_SIZE);
+    }
+    *addr_ptr = addr;
     return e;
 }
 intptr_t sys_seek(uintptr_t handle, off_t offset, seekfrom_t from) {
@@ -218,17 +263,6 @@ intptr_t sys_fork() {
         return -NOT_ENOUGH_MEM;
     }
     memcpy(process->curdir, current_proc->curdir, PAGE_SIZE);
-    Heap* heap = (Heap*)current_proc->heap_list.next;
-    while(&heap->list != &current_proc->heap_list) {
-        Heap* nh = heap_clone(heap);
-        if(!nh) {
-            process_drop(process);
-            return -NOT_ENOUGH_MEM;
-        }
-        list_append(&nh->list, &process->heap_list);
-        heap = (Heap*)heap->list.next;
-    }
-    process->heapid = current_proc->heapid;
     process->curdir_inode = iget(current_proc->curdir_inode);
 
     Task* current = current_task();
@@ -275,16 +309,10 @@ intptr_t sys_exec(const char* path, const char** argv, size_t argc, const char**
         drop_task(task);
         return e;
     }
-    Heap* heap = (Heap*)cur_proc->heap_list.next;
-    while(&heap->list != &cur_proc->heap_list) {
-        Heap* next = (Heap*)heap->list.next;
-        heap_destroy(heap);
-        heap = next;
-    }
-    cur_task->image.flags &= ~(TASK_FLAG_PRESENT);
-    cur_task->image.flags |= TASK_FLAG_DYING;
+    cur_task->flags &= ~(TASK_FLAG_PRESENT);
+    cur_task->flags |= TASK_FLAG_DYING;
     cur_proc->main_thread = task;
-    task->image.flags |= TASK_FLAG_PRESENT;
+    task->flags |= TASK_FLAG_PRESENT;
     // TODO: thread yield
     for(;;) asm volatile("hlt");
     return 0;
@@ -337,8 +365,8 @@ end:
         }
         kernel_dealloc(cur_proc->shared_memory.items, cur_proc->shared_memory.cap * PAGE_SIZE);
     }
-    cur_task->image.flags &= ~(TASK_FLAG_PRESENT);
-    cur_task->image.flags |= TASK_FLAG_DYING;
+    cur_task->flags &= ~(TASK_FLAG_PRESENT);
+    cur_task->flags |= TASK_FLAG_DYING;
     cur_proc->flags |= PROC_FLAG_DYING;
     enable_interrupts();
     // TODO: thread yield
@@ -363,88 +391,6 @@ intptr_t sys_waitpid(size_t pid) {
         return -NOT_FOUND;
     } 
     return block_waitpid(cur_task, child_index);
-}
-#define MIN_HEAP_PAGES 16
-#define MAX_HEAP_PAGES 64
-// FIXME: Possible problem with multiple tasks
-intptr_t sys_heap_create(uint64_t flags, void* addr, size_t size_min) {
-#ifdef CONFIG_LOG_SYSCALLS
-    strace("sys_heap_create(%zu, %zu)", (size_t)flags, size_min);
-#endif
-    Process* cur_proc = current_process();
-    Task* cur_task = current_task();
-    MemoryRegion* region = memregion_new(
-        MEMREG_WRITE,
-        KERNEL_PFLAG_USER | KERNEL_PTYPE_USER | KERNEL_PFLAG_WRITE | KERNEL_PFLAG_PRESENT | KERNEL_PFLAG_EXEC_DISABLE,
-        0,
-        0
-    );
-    if(!region) return -NOT_ENOUGH_MEM;
-    MemoryList* list = memlist_new(region);
-    if(!list) {
-    memregion_drop(region, NULL);
-        return -NOT_ENOUGH_MEM;
-    }
-    size_t pages_max = MAX_HEAP_PAGES;
-    size_t pages_min = (size_min+(PAGE_SIZE-1))/PAGE_SIZE;
-    if(!pages_min) pages_min = MIN_HEAP_PAGES;
-    if(pages_max < pages_min) pages_max = pages_min;
-    if(flags & HEAP_EXACT) pages_max = 0xFFFFFFFFFFFFFLL;
-    if(addr == NULL) addr = (void*)cur_task->image.eoe;
-    // FIXME: Region must be shared between all tasks and must be available in all tasks
-    MemoryList* insert_into = memlist_find_available(&cur_task->image.memlist, region, addr, pages_min, pages_max);
-    if(!insert_into) {
-        memlist_dealloc(list, NULL);
-        return -NOT_ENOUGH_MEM;
-    }
-    if(flags & HEAP_EXACT) {
-        if(region->address > (uintptr_t)addr || region->address + (region->pages*PAGE_SIZE) < ((uintptr_t)addr + pages_min * PAGE_SIZE)) {
-            memlist_dealloc(list, NULL);
-            return -VIRTUAL_SPACE_OCCUPIED;
-        }
-        region->address = (uintptr_t)addr;
-        region->pages = pages_min;
-    }
-    Heap* heap = heap_new(cur_proc->heapid++, region->address, region->pages, flags);
-    if(!heap) {
-        memlist_dealloc(list, NULL);
-        return -NOT_ENOUGH_MEM;
-    }
-    if(!page_alloc(cur_task->image.cr3, heap->address, heap->pages, region->pageflags)) {
-        heap_destroy(heap);
-        memlist_dealloc(list, NULL);
-        return -NOT_ENOUGH_MEM;
-    }
-    invalidate_pages((void*)heap->address, heap->pages);
-    list_append(&heap->list, cur_proc->heap_list.prev);
-    list_append(&list->list, &insert_into->list);
-    return heap->id;
-}
-intptr_t sys_heap_get(uintptr_t id, MinOSHeap* result) {
-#ifdef CONFIG_LOG_SYSCALLS
-    strace("sys_heap_get(%zu, %p)", id, result);
-#endif
-    Process* cur_proc = current_process();
-    Heap* heap = get_heap_by_id(cur_proc, id);
-    if(!heap) return -INVALID_HANDLE;
-    result->address = (void*)heap->address;
-    result->size = heap->pages*PAGE_SIZE;
-    return 0;
-}
-// TODO: Maybe make this into sys_heap_resize instead
-intptr_t sys_heap_extend(uintptr_t id, size_t extra_bytes) {
-#ifdef CONFIG_LOG_SYSCALLS
-    strace("sys_heap_extend(%zu, %zu)", (size_t)id, extra_bytes);
-#endif
-    size_t extra_pages = (extra_bytes+(PAGE_SIZE-1))/PAGE_SIZE;
-    if(extra_pages == 0) return 0;
-    Process* cur_proc = current_process();
-    Heap* heap = get_heap_by_id(cur_proc, id);
-    if(!heap) return -INVALID_HANDLE;
-    intptr_t e = process_heap_extend(cur_proc, heap, extra_pages);
-    if(e < 0) return e;
-    invalidate_pages((void*)heap->address, heap->pages);
-    return e;
 }
 intptr_t sys_chdir(const char* path) {
 #ifdef CONFIG_LOG_SYSCALLS
@@ -633,6 +579,7 @@ intptr_t sys_socket(uint32_t domain, uint32_t type, uint32_t prototype) {
         return -NOT_ENOUGH_MEM;
     }
     res->inode->kind = INODE_MINOS_SOCKET;
+    res->flags = O_RDWR;
     intptr_t e = family->init(res->inode);
     if(e < 0) {
         idrop(res->inode);
@@ -740,7 +687,6 @@ intptr_t sys_shmmap(size_t key, void** addr) {
     }
     SharedMemory* shm = kernel.shared_memory.items[key];
     MemoryRegion* region = memregion_new(
-            MEMREG_WRITE,
             KERNEL_PFLAG_USER | KERNEL_PTYPE_USER | KERNEL_PFLAG_WRITE | KERNEL_PFLAG_PRESENT | KERNEL_PFLAG_EXEC_DISABLE,
             0,
             0
@@ -756,7 +702,7 @@ intptr_t sys_shmmap(size_t key, void** addr) {
     }
 
     Task* cur_task = current_task();
-    MemoryList* insert_into = memlist_find_available(&cur_task->image.memlist, region, (void*)cur_task->image.eoe, shm->pages_count, shm->pages_count);
+    MemoryList* insert_into = memlist_find_available(&cur_task->memlist, region, (void*)cur_task->eoe, shm->pages_count, shm->pages_count);
     if(!insert_into) {
         e = -NOT_ENOUGH_MEM;
         goto err_memlist_find_available;
@@ -768,7 +714,7 @@ intptr_t sys_shmmap(size_t key, void** addr) {
         goto err_shared_memory;
     }
     size_t n = ptr_darray_pick_empty_slot(&cur_proc->shared_memory);
-    if(!page_mmap(cur_task->image.cr3, shm->phys, region->address, region->pages, region->pageflags)) {
+    if(!page_mmap(cur_task->cr3, shm->phys, region->address, region->pages, region->pageflags)) {
         e = -NOT_ENOUGH_MEM; 
         goto err_page_mmap;
     }
@@ -806,3 +752,4 @@ intptr_t sys_shmrem(size_t key) {
     mutex_unlock(&kernel.shared_memory_mutex);
     return 0;
 }
+

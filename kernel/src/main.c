@@ -12,11 +12,10 @@
 #include "memory.h"
 #include "mem/bitmap.h"
 #include "kernel.h"
-#include "debug.h"
 #include "page.h"
 #include "arch/x86_64/gdt.h"
 #include "arch/x86_64/enable_arch_extra.h"
-#include "exception.h"
+#include "arch/x86_64/exception.h"
 #include "vfs.h"
 #include "rootfs.h"
 #include "mem/slab.h"
@@ -25,13 +24,11 @@
 #include "task.h"
 #include "exec.h" 
 #include "pic.h"
-#include "syscall.h"
 #include "devices.h"
 #include "./devices/tty/tty.h"
 #include <minos/keycodes.h>
 #include <minos/key.h>
 #include <sync.h>
-#include "heap.h"
 #include "cmdline.h"
 #include "charqueue.h"
 #include "filelog.h"
@@ -109,11 +106,9 @@ void _start() {
     init_memregion();
     init_processes();
     init_tasks();
-    init_heap();
     init_kernel_task();
     init_schedulers();
     init_task_switch();
-    init_syscalls();
     init_resources();
     init_shm_cache();
     // VFS

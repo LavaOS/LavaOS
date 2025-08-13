@@ -2,15 +2,20 @@
 #include "fs/ustar/ustar.h"
 #include "log.h"
 #include "bootutils.h"
+#include "vfs.h"
+#include "print.h"
+#include "kernel.h"
 
-void init_rootfs() {
+void init_rootfs(void) {
     intptr_t e = 0;
     const char* path = NULL;
     path = "/devices";
-    if((e = vfs_creat_abs(path, O_DIRECTORY)) < 0) {
+    Inode* devices;
+    if((e = vfs_creat_abs(path, O_DIRECTORY, &devices)) < 0) {
         printf("ERROR: init_rootfs: Could not create %s : %s\n", path, status_str(e));
         kabort();
     }
+    idrop(devices);
 
     const char* initrd = "/initrd";
     BootModule module;

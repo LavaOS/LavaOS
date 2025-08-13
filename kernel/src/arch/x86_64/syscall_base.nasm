@@ -12,9 +12,6 @@ extern sys_fork
 extern sys_exec
 extern sys_exit
 extern sys_waitpid
-extern sys_heap_create
-extern sys_heap_get
-extern sys_heap_extend
 extern sys_chdir
 extern sys_getcwd
 extern sys_diropen
@@ -53,9 +50,6 @@ syscall_table:
    dq sys_exec
    dq sys_exit
    dq sys_waitpid
-   dq sys_heap_create
-   dq sys_heap_get
-   dq sys_heap_extend
    dq sys_chdir
    dq sys_getcwd
    dq sys_stat
@@ -78,7 +72,8 @@ syscall_table:
    dq sys_shmrem
 syscall_table_end:
 section .text
-syscall_base:
+global _irq_128
+_irq_128:
    cmp rax, (syscall_table_end-syscall_table)/PTR_SIZE
    jge .unsupported
    push rbx
