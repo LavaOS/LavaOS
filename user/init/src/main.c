@@ -10,7 +10,7 @@ int main() {
     printf("Before fork....\n");
     setenv("PATH", "/user:", 0);
     intptr_t e = fork();
-    const char* path = "/user/shell";
+    const char* path = "/user/wm";
     if(e == (-YOU_ARE_CHILD)) {
         const char* argv[] = { path };
         if((e=execve(path, argv, sizeof(argv)/sizeof(*argv), (const char**)environ, __environ_size)) < 0) {
