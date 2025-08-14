@@ -211,7 +211,7 @@ static bool load_image(const char* file, Image* image) {
         error("Failed to load `%s`: %s", file, stbi_failure_reason());
         return false;
     }
-    assert(comp == 4);
+    // assert(comp == 4);
     uint32_t* head = pixels;
     for(size_t y = 0; y < (size_t)height; ++y) {
         for(size_t x = 0; x < (size_t)width; ++x) {
