@@ -82,7 +82,7 @@ static bool run(Build* build, Cmd* cmd) {
         cmd,
         "qemu-system-x86_64",
         "-smp", "2",
-        "-m", "32",
+        "-m", "128",
         "-cdrom", "./bin/OS.iso",
 	"-device", "isa-debug-exit,iobase=0xf4,iosize=0x04",
     );
