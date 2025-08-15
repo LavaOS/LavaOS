@@ -20,50 +20,22 @@ It aims to be minimalist, hackable, and blazing fast — powered by a custom boo
 
 ## 🔧 Getting Started
 
-### Clone the source (Linux / WSL / macOS / BSD)
+### Clone the source
 
 ```bash
 git clone https://github.com/jrifuoue/LavaOS.git
 cd LavaOS
 ```
-On Windows, download the .zip file and extract it manually.
-
 ### 🛠 Build the Compiler (nob)
-
-Linux / WSL:
 
 ```bash
 gcc nob.c -o nob
 ```
-
-macOS / BSD:
-
-```bash
-clang nob.c -o nob
-```
-
-Windows (Visual Studio with C/C++ tools):
-
-```powershell
-cl nob.c
-```
-
 ### ⚙️ Build and Run the System
-
-Linux / WSL / macOS / BSD:
 
 ```bash
 ./nob bruh
 ```
-
-Windows:
-
-```
-nob build
-```
-
-Windows doesn't support qemu, after build, put the iso (path: LavaOS\bin\OS.iso) into virtualbox or vmware
-
 ## ⚠️ Heads Up
 
 The first run will compile a full custom GCC toolchain inside your environment.
