@@ -20,7 +20,7 @@ It aims to be minimalist, hackable, and blazing fast — powered by a custom boo
 
 ## 🔧 Getting Started
 
-### Clone the source
+### 💾 Clone the source
 
 ```bash
 git clone https://github.com/jrifuoue/LavaOS.git
