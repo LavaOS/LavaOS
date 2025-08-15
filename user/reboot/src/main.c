@@ -1,5 +1,5 @@
 #include <stdint.h>
-#include <io.h>
+#include <sys/io.h>
 
 int main() {
     outb(0x64, 0xFE);

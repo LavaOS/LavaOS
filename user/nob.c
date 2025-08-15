@@ -23,7 +23,7 @@ const char* projects[] = {
     "shell",
     "simpdump",
     "shutdown",
-    "tinycc",
+    // "tinycc",
     "wm",
     "miniterm",
     "doomgeneric"
