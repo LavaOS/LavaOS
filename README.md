@@ -1,5 +1,8 @@
 ### Visit our website: https://jrifuoue.github.io/lavaos.github.io/
 
+![banner](https://github.com/jrifuoue/LavaOS/raw/main/banner.png)
+(Banner has ben created by AI)
+
 # LavaOS 🔥
 
 **LavaOS** is a free and open-source Unix-like operating system, forked from [MinOS](https://github.com/Dcraftbg/MinOS).  
