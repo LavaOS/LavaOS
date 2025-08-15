@@ -1,6 +1,6 @@
 ### Visit our website: https://jrifuoue.github.io/lavaos.github.io/
 
-![banner](https://github.com/jrifuoue/LavaOS/raw/main/banner.png)
+![banner](banner.png)
 
 # LavaOS 🔥
 
