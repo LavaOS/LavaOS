@@ -95,7 +95,6 @@ buf_err:
     close(dirid);
     size_t iterid = e;
     Stats stats={0};
-    printf("ls: %s\n", path);
     while((e=diriter_next(iterid)) >= 0) {
         size_t entry = e;
         if((e=identify(entry, namebuf, sizeof(namebuf))) < 0) {

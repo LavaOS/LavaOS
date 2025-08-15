@@ -4,10 +4,10 @@
 
 
 const char* projects[] = {
+    "ansi_test",
     "libwm",
     "libpluto",
     "MinSDL",
-    "ansi_test",
     "cat",
     "dynld",
     "echo",
@@ -17,8 +17,8 @@ const char* projects[] = {
     "hello_window",
     "init",
     "ls",
-    "mimux",
     "my_basic",
+    "math",
     "reboot",
     "shell",
     "simpdump",

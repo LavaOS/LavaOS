@@ -174,7 +174,6 @@ void run_cmd(const char** argv, size_t argc) {
     if(e != 0) printf("%s exited with: %d\n", argv[0], (int)e);
 }
 int main() {
-    printf("LavaShell Started succesfuly\n");
     Arena arena={0};
     char* linebuf = malloc(LINEBUF_MAX);
     intptr_t e = 0;
