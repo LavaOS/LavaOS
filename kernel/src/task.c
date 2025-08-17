@@ -18,7 +18,6 @@ void init_kernel_task() {
     Task* kt = NULL;
     assert(kt = kernel_task_add());
     kt->cr3 = kernel.pml4;
-    kt->flags |= TASK_FLAG_RUNNING;
     for(size_t i = 0; i <= kernel.max_processor_id; ++i) {
         kernel.processors[i].current_task = kt;
     }
