@@ -20,6 +20,8 @@ const char* projects[] = {
     "my_basic",
     "math",
     "mimux",
+    "phoenix",
+    "ptest",
     "reboot",
     "shell",
     "simpdump",
