@@ -917,11 +917,11 @@ void handle_mouse_event(int what, int x, int y, int button) {
                               min_button  = menu_get_min_rect(win);
                     if(rect_collide_point(&x_button, &cursorp)) {
                         // TODO: send close window event
-                        // Rectangle rect = win->rect;
-                        // list_remove(&win->list);
-                        // free(win);
-                        // redraw_region(&fb0, &rect);
-                        // draw_image(&fb0, &cursor, mouse_x, mouse_y);
+                        Rectangle rect = win->rect;
+                        list_remove(&win->list);
+                        free(win);
+                        redraw_region(&fb0, &rect);
+                        draw_image(&fb0, &cursor, mouse_x, mouse_y);
                         info("Close");
                         return;
                     } else if (rect_collide_point(&min_button, &cursorp)) {
