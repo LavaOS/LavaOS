@@ -73,6 +73,10 @@ void exception_handler(ExceptionFrame* frame, uint64_t cr2) {
     kerror("Gotten exception (%zu) with code %zu at rip: %p at virtual: %p",frame->irq, (size_t)frame->code,(void*)frame->rip,(void*)cr2);
     Task* task  = current_task();
 
+    if(task) {
+        kinfo("Task that caused this: %s", task->name);
+    }
+
     // if(task) kinfo("the task at hand: %s", task->argv[0]);
 #if 0
     if(task && frame->irq == EXCEPTION_PAGE_FAULT) {
