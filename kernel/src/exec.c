@@ -48,7 +48,7 @@ intptr_t fork(Task* task, Task* result, void* frame) {
 
     memcpy(result->name, task->name, strlen(task->name) + 1);
 
-    result->ts_rsp = frame;
+    result->rsp = frame;
     result->flags  = task->flags;
     size_t processor_id = pick_processor_for_task();
     Processor* processor = &kernel.processors[processor_id];
@@ -312,7 +312,7 @@ intptr_t exec(Task* task, Path* path, Args* args, Args* envs) {
         return_defer_err(e);
     stack_head = (char*)(((((uintptr_t)stack_head))/16)*16);
     void* frame = (void*)(virt_to_phys(task->cr3, KERNEL_STACK_PTR) | KERNEL_MEMORY_MASK);
-    task->ts_rsp = (void*)(KERNEL_STACK_PTR - (frame - setup_user_first_exec(frame, header.entry, (uintptr_t)stack_head, args->argc, (uintptr_t)argv, envs->argc, (uintptr_t)envp)));
+    task->rsp = (void*)(KERNEL_STACK_PTR - (frame - setup_user_first_exec(frame, header.entry, (uintptr_t)stack_head, args->argc, (uintptr_t)argv, envs->argc, (uintptr_t)envp)));
     disable_interrupts();
     page_join(kernel.pml4, task->cr3);
     enable_interrupts();
