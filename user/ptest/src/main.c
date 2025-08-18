@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <phoenix.h>
 
-// تعریف مینیمال dummy توابع برای تست
 phx_instance phxCreateInstance(void) { phx_instance h={1}; return h; }
 phx_device phxCreateDevice(phx_instance i) { phx_device h={2}; return h; }
 phx_swapchain phxCreateSwapchain(phx_device d, const phx_platform_fb* fb, const phx_swapchain_desc* desc) { phx_swapchain h={3}; return h; }
@@ -22,6 +21,7 @@ void phxSubmit(phx_device d, phx_cmdlist cl) {}
 void phxPresent(phx_swapchain sc) {}
 
 int main(void) {
+    printf("Phoenix test started...\n");
     phx_instance inst = phxCreateInstance();
     phx_device dev = phxCreateDevice(inst);
 

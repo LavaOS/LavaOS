@@ -139,8 +139,8 @@ void draw_window(Window* window) {
     }
     window->cursor_x = x;
     window->cursor_y = y;
-    // stui_window_border(window->region.x, window->region.y, window->region.width-1, window->region.height-1, '-', '|', '+');
-    render_region_border(window->region, '-', '|', '+');
+    // stui_window_border(window->region.x, window->region.y, window->region.width-1, window->region.height-1, '-', '|', '*');
+    render_region_border(window->region, '-', '|', '*');
 }
 void window_putchar(Window* window, int c) {
     switch(c) {
