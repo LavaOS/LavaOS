@@ -9,9 +9,7 @@ clear
 
 echo "[*]MinOS burn script"
 
-cp -v ./bin/OS.iso ./bin/OS_Bios.iso
-./kernel/vendor/limine/limine bios-install ./bin/OS_Bios.iso
-sudo dd if=./bin/OS_Bios.iso of=$BURN_ONTO status=progress oflag=sync bs=1M
+sudo dd if=./bin/OS.iso of=$BURN_ONTO status=progress oflag=sync bs=1M
 sync
 sudo eject $BURN_ONTO
 
