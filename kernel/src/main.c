@@ -51,7 +51,7 @@ void spawn_init(void) {
     const char* epath = NULL;
     Args args;
     Args env;
-    epath = "/user/init";
+    epath = "/init";
     const char* argv[] = {epath, "test_arg"};
     args = create_args(ARRAY_LEN(argv), argv);
     const char* envv[] = {"FOO=BAR", "BAZ=A"};
