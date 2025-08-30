@@ -3,4 +3,4 @@
 	url = https://github.com/limine-bootloader/limine.git
 [submodule "user/libc"]
 	path = user/libc
-	url = https://github.com/jrifuoue/libc.git
+	url = https://github.com/LavaOS/libc.git
