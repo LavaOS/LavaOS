@@ -1,4 +1,5 @@
-### Visit our website: https://jrifuoue.github.io/lavaos.github.io/
+### Visit our website:
+https://lavaos.github.io/getlavaos/
 
 ![banner](banner.png)
 
