@@ -1,6 +1,0 @@
-#define STBI_NO_THREAD_LOCALS
-#define STBI_FAILURE_USERMSG
-// #define STBI_NO_FAILURE_STRINGS
-#define STB_IMAGE_IMPLEMENTATION
-#include "stb_image.h"
-
