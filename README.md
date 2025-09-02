@@ -1,3 +1,3 @@
 # ⚠️ Legacy branch
 
-This is the ttash can of the LavaOS and old codes will move to here
+This is the trash can of the LavaOS and old codes will move to here
