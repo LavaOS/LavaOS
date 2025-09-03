@@ -1,8 +1,8 @@
 ## ⚠️ Important notes
 
-This project is using code of the MinOS (https://github.com/Dcraftbg/MinOS) Project, created by Dcraftbg, Licensed unter the mit license
+This project is using code of the MinOS (https://github.com/Dcraftbg/MinOS) Project, created by Dcraftbg, Licensed unter the mit license (License file in LICENSE.MINOS)
 
-this project is using limine bootloader (https://github.com/limine-bootloader/limine), licensed under bsd3-clause
+this project is using limine bootloader (https://github.com/limine-bootloader/limine), licensed under bsd3-clause (License file in kernel/vendor/limine/LICENSE)
 
 ### Visit our website:
 https://lavaos.github.io/getlavaos/
