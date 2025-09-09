@@ -13,12 +13,12 @@
 // Versions + defines:
 #define GCC_VERSION "gcc-12.2.0"
 #define GCC_TAR     GCC_VERSION".tar.gz"
-#define GCC_URL     "https://ftp.gnu.org/gnu/gcc/"GCC_VERSION"/"GCC_TAR
+#define GCC_URL     "https://mirror.truenetwork.ru/gnu/gcc/"GCC_VERSION"/"GCC_TAR
 #define GCC_DIR     "bin/gcc"
 
 #define BINUTILS_VERSION "binutils-2.39"
 #define BINUTILS_TAR     BINUTILS_VERSION".tar.gz"
-#define BINUTILS_URL     "https://ftp.gnu.org/gnu/binutils/"BINUTILS_TAR
+#define BINUTILS_URL     "https://mirror.truenetwork.ru/gnu/binutils/"BINUTILS_TAR
 #define BINUTILS_DIR     "bin/binutils"
 
 #define SYSROOT "bin/sysroot"
