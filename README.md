@@ -1,8 +1,10 @@
-## ⚠️ Important notes
+## Licensing
 
-This project is using code of the MinOS (https://github.com/Dcraftbg/MinOS) Project, created by Dcraftbg, Licensed unter the mit license (License file in LICENSE.MINOS)
-
-this project is using limine bootloader (https://github.com/limine-bootloader/limine), licensed under bsd3-clause (License file in kernel/vendor/limine/LICENSE)
+- The source code of this project is licensed under the **GNU General Public License v3.0 (GPL-3.0)**.  
+- This project includes third-party code:  
+  - [MinOS](https://github.com/Dcraftbg/MinOS) by Dcraftbg, licensed under the **MIT License** (see `LICENSE.MINOS`).  
+  - [Limine Bootloader](https://github.com/limine-bootloader/limine), licensed under the **BSD 3-Clause License** (see `kernel/vendor/limine/LICENSE`).  
+- All third-party licenses are preserved in this repository as required.
 
 ### Visit our website:
 https://lavaos.github.io/getlavaos/
@@ -62,7 +64,3 @@ Feel free to open issues, PRs, or discussions. But please:
     Avoid large-scale rewrites unless they're clearly beneficial
 
     Let's keep LavaOS light, fun, and educational — together 💡
-
-## 📜 License
-
-MIT License — see `LICENSE.md` file for full text.
