@@ -18,7 +18,7 @@ const char* projects[] = {
     "hello_window",
     "init",
     "ls",
-    "my_basic",
+    // "my_basic",
     "math",
     "mimux",
     "phoenix",
