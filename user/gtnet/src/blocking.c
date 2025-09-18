@@ -7,6 +7,8 @@
 #include <sys/socket.h>
 #include <errno.h>
 #include <string.h>
+#include <fcntl.h>
+#include <unistd.h>
 
 #define NUM_CONNECTIONS 2
 static intptr_t readline(char* buf, size_t bufmax) {
@@ -80,7 +82,6 @@ int blocking_client(void*) {
     server_addr.sminos_family = AF_MINOS;
     const char* addr = "/sockets/gtnet";
     struct stat stats;
-    intptr_t e;
     while(stat(addr, &stats) && errno == ENOENT);
     // info("Trying to connect...");
     strcpy(server_addr.sminos_path, addr);
