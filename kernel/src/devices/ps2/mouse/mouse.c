@@ -122,7 +122,7 @@ intptr_t init_ps2_mouse(void) {
         if((e=ps2_cmd_controller(0xA7)) < 0) return e;
         config |=  ((1 << 1) | (1 << 5));
         if((e=ps2_cmd_controller2(PS2_CMD_SET_CONFIG, config)) < 0) return e;
-    #if 0
+    #if 1
         if((e=ps2_cmd_controller(PS2_CMD_GET_CONFIG)) < 0) return e;
         if((e=ps2_read_u8()) < 0) return e;
         config = e;

@@ -90,7 +90,7 @@ void boot_map_phys_memory() {
             ktrace("Skipping %-22s (%p -> %p) %zu pages", limine_memmap_str[entry->type], (void*)PAGE_ALIGN_DOWN(entry->base), (void*)PAGE_ALIGN_DOWN(entry->base | KERNEL_MEMORY_MASK), (size_t)pages);
         }
     }
-#if 0
+#if 1
     // Fuck you limine
     kinfo("Framebuffer Patches");
     size_t framebuffer_count = get_framebuffer_count();

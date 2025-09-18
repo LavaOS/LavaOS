@@ -12,12 +12,12 @@ typedef struct {
 } KeyState;
 static void key_set(KeyState* kb, uint16_t code, uint8_t released) {
     uint8_t down = released == 0;
-    //debug_assert(code < ARRAY_LEN(kb->state));
+    debug_assert(code < ARRAY_LEN(kb->state));
     kb->state[code/8] &= ~(1 << (code % 8));
     kb->state[code/8] |= down << (code%8);
 }
 static bool key_get(KeyState* kb, uint16_t code) {
-    //debug_assert(code < ARRAY_LEN(kb->state));
+    debug_assert(code < ARRAY_LEN(kb->state));
     return kb->state[code/8] & (1<<(code%8));
 }
 static uint8_t US_QWERTY_SHIFTED[256] = {

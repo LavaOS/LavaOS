@@ -132,7 +132,7 @@ intptr_t vfs_register_device(const char* name, Inode* device);
 
 // TODO: Figure out a way to inline these 
 // NOTE: Functions for fs drivers
-// Inode* vfs_alloc_inode(Superblock* superblock);
+Inode* vfs_alloc_inode(Superblock* superblock);
 Inode* new_inode();
 // Initialise the inode with its default fields
 void inode_init(Inode* inode, Cache* cache);

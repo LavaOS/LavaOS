@@ -13,7 +13,7 @@
 #if 1
 #   define COPY_DIR MINOS_ROOT "initrd/user/"
 #endif
-#define HASH "5aa0c1f9f7be71126ce415581f2fe7b26c425c3e"
+#define HASH "55315310daa149d116a99dff965402336c5eeadf"
 #define URL  "https://github.com/paladin-t/my_basic.git"
 
 #define c_compiler(cmd)     nob_cmd_append(cmd, "x86_64-minos-gcc")
@@ -28,7 +28,7 @@ bool do_patch(Nob_Cmd* cmd, const char* patch) {
     return nob_cmd_run_sync_and_reset(cmd);
 }
 bool do_clone(Nob_Cmd* cmd, const char* url) {
-    nob_cmd_append(cmd, "git", "clone", url);
+    nob_cmd_append(cmd, "git", "clone", "--depth", "3", url);
     return nob_cmd_run_sync_and_reset(cmd);
 }
 bool do_checkout(Nob_Cmd* cmd, const char* hash) {

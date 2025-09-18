@@ -26,11 +26,11 @@ void kpanic(const char* fmt, ...) {
             .x = 0,
             .y = 0,
         };
-	fbwriter_draw_cstr(&writer, " _______    _____    _____   _   ___\n", 0xFFFFFF, 0xFF0000);
-        fbwriter_draw_cstr(&writer, "|       |  |     |  |     | | | |   \n", 0xFFFFFF, 0xFF0000);
-        fbwriter_draw_cstr(&writer, "|  _____|  |-----|  |     | | | |   \n", 0xFFFFFF, 0xFF0000);
-        fbwriter_draw_cstr(&writer, "| |        |     |  |     | | | |   \n", 0xFFFFFF, 0xFF0000);
-        fbwriter_draw_cstr(&writer, "|_|        |     |  |     | |_| |___\n", 0xFFFFFF, 0xFF0000);
+	    fbwriter_draw_cstr(&writer, " _______    _____    _____   _   ___                                                                                                                           \n", 0xFFFFFF, 0xFF0000);
+        fbwriter_draw_cstr(&writer, "|       |  |     |  |     | | | |                                                                                                                              \n", 0xFFFFFF, 0xFF0000);
+        fbwriter_draw_cstr(&writer, "|  _____|  |-----|  |     | | | |                                                                                                                              \n", 0xFFFFFF, 0xFF0000);
+        fbwriter_draw_cstr(&writer, "| |        |     |  |     | | | |                                                                                                                              \n", 0xFFFFFF, 0xFF0000);
+        fbwriter_draw_cstr(&writer, "|_|        |     |  |     | |_| |___                                                                                                                           \n", 0xFFFFFF, 0xFF0000);
         print_base(&writer, kpanic_fbwriter_write_sink, fmt, va_display);
     }
     va_end(va_display);

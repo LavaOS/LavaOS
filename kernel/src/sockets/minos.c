@@ -223,7 +223,7 @@ static InodeOps minos_server_ops = {
 static intptr_t minos_listen(Inode* sock, size_t n) {
     intptr_t e;
     MinOSServer* server = &((MinOSSocket*)sock->priv)->server;
-#if 0 // <- Debug testing I guess
+#if 1 // <- Debug testing I guess
     if(strlen(server->addr) == 0) {
         // TODO: better error status for this:
         kwarn("minos socket: called listen before bind!");

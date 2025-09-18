@@ -78,7 +78,7 @@ void exception_handler(ExceptionFrame* frame, uint64_t cr2) {
     }
 
     // if(task) kinfo("the task at hand: %s", task->argv[0]);
-#if 0
+#if 1
     if(task && frame->irq == EXCEPTION_PAGE_FAULT) {
 #endif
         for(struct list* head = task->memlist.next; head != &task->memlist; head = head->next) {
@@ -90,7 +90,7 @@ void exception_handler(ExceptionFrame* frame, uint64_t cr2) {
                 kwarn("Inside this region!");
             }
         }
-#if 0
+#if 1
     }
 #endif
     kerror("Fin...");

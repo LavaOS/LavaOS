@@ -11,8 +11,8 @@ int octtoi(const char* str, size_t len) {
     }
     return res;
 }
-/*
-typedef char Ustar12[12]
+
+typedef char Ustar12[12];
 typedef struct {
     char filename[100];
     uint64_t mode;
@@ -31,7 +31,7 @@ typedef struct {
     uint64_t minornum;
     char filename_prefix[155];
 } UstarMeta;
-*/
+
 
 #define USTAR_FILESIZE_OFF 124
 #define USTAR_TYPE_OFF  156

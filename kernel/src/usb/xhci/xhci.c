@@ -434,10 +434,10 @@ static intptr_t init_event_ring(XhciController* cont) {
     memset(cont->event_ring, 0, EVENT_RING_CAP*sizeof(TRB));
     cont->event_ring_cycle = 1;
     // NOTE: This maybe shouldn't be done by us
-    // TRB* last = &cont->event_ring[EVENT_RING_CAP-1];
-    // last->cycle = 1;
-    // last->data = cont->event_ring_phys+0*sizeof(TRB);
-    // last->type = TRB_TYPE_LINK;
+    TRB* last = &cont->event_ring[EVENT_RING_CAP-1];
+    last->cycle = 1;
+    last->data = cont->event_ring_phys+0*sizeof(TRB);
+    last->type = TRB_TYPE_LINK;
     return 0;
 }
 static void deinit_event_ring(XhciController* cont) {
@@ -659,7 +659,7 @@ intptr_t init_xhci(PciDevice* dev) {
     dev->handler = xhci_handler; 
     dev->priv = cont;
     msi_register(&msi_manager, dev);
-    // irq_clear(dev->irq);
+    irq_clear(dev->irq);
     kinfo("xHCI Running");
     xhci_op_regs(cont)->usb_cmd = xhci_op_regs(cont)->usb_cmd | USBCMD_RUN;
     for(size_t i = 0; i < cont->ports_count; ++i) {

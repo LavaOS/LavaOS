@@ -32,7 +32,7 @@ static uint16_t SCAN1_PS2_EX[128] = {
     0,                     0,                     0,                     0,                     0,                     0,                     0,                     0,                     
     0,                     0,                     0,                     0,                     0,                     0,                     0,                     0,                     
 };
-#if 0
+#if 1
 static void* max_memcpy(void* dest, const void* src, size_t destcap, size_t srclen) {
     if(destcap < srclen) srclen = destcap;
     return memcpy(dest, src, srclen);
