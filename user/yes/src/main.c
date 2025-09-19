@@ -28,10 +28,9 @@ int main(int argc, const char** argv) {
         if (!first) printf(" ");
 	while(1) {
             printf("%s", arg);
+            printf("\n");
 	}
         first = 0;
     }
-
-    printf("\n");
     return 0;
 }

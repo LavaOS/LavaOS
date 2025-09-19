@@ -9,7 +9,6 @@
 #include <minos/status.h>
 #include <minos/ptm/ptm.h>
 #include <minos/tty/tty.h>
-#include <stdexec.h>
 
 #include <flanterm.h>
 #include <flanterm_backends/fb.h>
@@ -61,9 +60,9 @@ intptr_t ptty_spawn_shell(Ptty* ptty) {
         }
         assert(e == STDERR_FILENO);
         const char* argv[] = {
-            "shell"
+            "shell", NULL
         };
-        if(execvp(argv[0], argv, sizeof(argv)/sizeof(*argv)) < 0) {
+        if(execvp(argv[0], (char**)argv) < 0) {
             fprintf(stderr, "ERROR: Failed to spawn shell: %s\n", status_str(e));
         }
         exit(1);
@@ -82,7 +81,7 @@ int epoll_add_fd(int epollfd, int fd, int events) {
 int main(void) {
     PlutoInstance instance;
     pluto_create_instance(&instance);
-    size_t width = 500, height = 500;
+    size_t width = 750, height = 500;
     int win = pluto_create_window(&instance, &(WmCreateWindowInfo) {
         .width = width,
         .height = height,
