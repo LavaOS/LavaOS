@@ -5,6 +5,7 @@
 #include <interrupt.h>
 #include <port.h>
 #include <log.h>
+#include <stdio.h>
 
 static uint16_t SCAN1_PS2[] = {
     0   ,MINOS_KEY_ESCAPE,'1' ,'2' ,'3' ,'4' ,'5' ,'6' ,'7' ,'8' ,'9' ,'0' ,'-' ,'=' ,MINOS_KEY_BACKSPACE, MINOS_KEY_TAB,
@@ -161,9 +162,8 @@ void ps2_keyboard_handler(TaskRegs* regs) {
            keyqueue_push(&keyqueue, (Key) { key, released });
         }
         extended = false;
-        // else printf("Keyboard: <Unknown %02X>\n",code);
     }
-    }
+}
 end:
     irq_eoi(1);
 }

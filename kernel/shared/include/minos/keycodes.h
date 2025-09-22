@@ -6,7 +6,7 @@ enum {
    MINOS_KEY_ENTER='\n', 
    MINOS_KEY_ESCAPE=0x1B,
    MINOS_KEY_LEFT_CTRL=256, // <256 are mostly ASCII keycodes
-   MINOS_KEY_RIGHT_CTL,
+   MINOS_KEY_RIGHT_CTL=256, // Right ctrl linked to left ctrl
    MINOS_KEY_LEFT_SHIFT,
    MINOS_KEY_RIGHT_SHIFT,
    MINOS_KEY_LEFT_ALT,

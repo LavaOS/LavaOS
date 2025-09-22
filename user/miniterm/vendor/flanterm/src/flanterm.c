@@ -38,6 +38,7 @@
 #define FLANTERM_IN_FLANTERM
 
 #include "flanterm.h"
+#include <stdio.h>
 
 // Tries to implement this standard for terminfo
 // https://man7.org/linux/man-pages/man4/console_codes.4.html

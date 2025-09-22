@@ -4,12 +4,14 @@
 
 
 const char* projects[] = {
+    "clear",
     "ansi_test",
     "libwm",
     "libpluto",
     "MinSDL",
     "cat",
     "dynld",
+    "doomgeneric",
     "echo",
     "fbtest",
     "gtnet",

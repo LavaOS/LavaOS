@@ -4,3 +4,6 @@
 [submodule "user/libc"]
 	path = user/libc
 	url = https://github.com/LavaOS/libc.git
+[submodule "user/doomgeneric"]
+	path = user/doomgeneric
+	url = https://github.com/Dcraftbg/doomgeneric.git

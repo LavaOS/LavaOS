@@ -4,6 +4,7 @@
 - This project includes third-party code:  
   - [MinOS](https://github.com/Dcraftbg/MinOS) by Dcraftbg, licensed under the **MIT License** (see `LICENSE.MINOS`).  
   - [Limine Bootloader](https://github.com/limine-bootloader/limine), licensed under the **BSD 3-Clause License** (see `kernel/vendor/limine/LICENSE`).  
+  - [Doomgeneric (Ported by dcraftbg)](https://github.com/Dcraftbg/doomgeneric), licensed under the **GPLv2 License** (see `user/doomgeneric/LICENSE`).
 - All third-party licenses are preserved in this repository as required.
 
 ### Visit our website:

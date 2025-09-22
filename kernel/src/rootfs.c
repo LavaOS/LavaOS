@@ -17,32 +17,18 @@ void init_rootfs(void) {
         kpanic("init_rootfs: Could not create %s : %s", path, status_str(e));
 
     const char* initrd = "/initrd";
+    const char* extras = "/extras";
     BootModule module;
     if(find_bootmodule(initrd, &module)) {
         if((e=ustar_unpack("/", module.data, module.size)) < 0) {
             kerror("Failed to unpack: %s into root: %s", initrd, status_str(e));
         }
-    } 
-    else kwarn("Failed to find %s", initrd); 
-#ifdef ENABLE_WELCOME
-    path = "/Welcome.txt";
-    if((e = vfs_creat_abs(path, 0)) < 0) {
-        kpanic("init_rootfs: Could not create %s : %s", path, status_str(e));
     }
-    {
-        const char* msg = "Hello and welcome to MinOS!\nThis is a mini operating system made in C.\nDate of compilation " __DATE__ ".";
-        Inode* file;
-        if((e = vfs_find_abs(path, &file)) < 0) {
-            kwarn("init_rootfs: Could not open %s : %s\n", path, status_str(e));
-            return;
-        } else {
-            if((e = write_exact(file, msg, strlen(msg), 0)) < 0) {
-                kwarn("init_rootfs: Could not write welcome message : %s\n", status_str(e));
-                idrop(file);
-                return;
-            }
-        } 
-        idrop(file);
+    else kpanic("Bro you can't boot live iso without initrd :|"); // Initrd not found
+    if(find_bootmodule(extras, &module)) {
+        if((e=ustar_unpack("/extras", module.data, module.size)) < 0) {
+            kerror("Failed to unpack: %s into root: %s", extras, status_str(e));
+        }
     }
-#endif
+    else kwarn("Extras not found.");
 }

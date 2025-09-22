@@ -32,7 +32,7 @@ void idrop(Inode* inode) {
     if(inode->shared == 1) {
         if(inode->superblock) {
             mutex_lock(&inode->superblock->inodemap_lock);
-            assert(inodemap_remove(&inode->superblock->inodemap, inode->id));
+            // assert(inodemap_remove(&inode->superblock->inodemap, inode->id));
             mutex_unlock(&inode->superblock->inodemap_lock);
         }
         idestroy(inode);

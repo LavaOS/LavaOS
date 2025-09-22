@@ -108,7 +108,7 @@ MemoryList* memlist_new(MemoryRegion* region) {
 
 void memregion_drop(MemoryRegion* region, page_t pml4) {
     if(region->shared == 1) {
-        // if(pml4) page_dealloc(pml4, region->address, region->pages);
+        if(pml4) page_unalloc(pml4, region->address, region->pages);
         cache_dealloc(kernel.memregion_cache, region);
         return;
     }

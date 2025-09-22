@@ -255,7 +255,7 @@ static bool collides_cursor(const Rectangle* rect) {
 }
 // Components of the screen
 static void wallpaper_redraw_region(const Framebuffer* fb, const Rectangle* rect) {
-    fill_rect(fb, rect, 0xFF212121);
+    fill_rect(fb, rect, 0x6666); // Windows 95 light blue background :O
 }
 // Window:
 enum {
@@ -993,7 +993,7 @@ typedef struct {
 } Keyboard;
 static void key_set(Keyboard* kb, uint16_t code, uint8_t released) {
     uint8_t down = released == 0;
-    //debug_assert(code < ARRAY_LEN(kb->state));
+    // debug_assert(code < ARRAY_LEN(kb->state));
     kb->state[code/8] &= ~(1 << (code % 8));
     kb->state[code/8] |= down << (code%8);
 }

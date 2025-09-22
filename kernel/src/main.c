@@ -8,6 +8,7 @@
 #include "log.h"
 #include "assert.h"
 #include "print.h"
+#include "print_base.h"
 #include "utils.h"
 #include "memory.h"
 #include "mem/bitmap.h"
@@ -46,6 +47,8 @@
 
 #include "term/fb/fb.h"
 
+const char* msg = "Hello and welcome to MinOS!\nThis is a mini operating system made in C.\nDate of compilation " __DATE__ ".";
+
 void spawn_init(void) {
     intptr_t e = 0;
     const char* epath = NULL;
@@ -64,10 +67,12 @@ void _start() {
     BREAKPOINT();
     serial_init();
     kernel.logger = &serial_logger;
+    kernel.logger->level = LOG_ALL;
     init_cmdline();
     init_loggers();
     init_gdt();
     disable_interrupts();
+    kinfo(msg);
     init_idt();
     init_exceptions();
     reload_tss();
@@ -77,9 +82,7 @@ void _start() {
     enable_cpu_features();
     // Interrupt controller Initialisation
     init_pic();
-    kernel.logger->level = LOG_WARN;
     init_acpi();
-    kernel.logger->level = LOG_ALL;
     enable_interrupts();
     // Caches
     init_cache_cache();
