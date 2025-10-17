@@ -12,8 +12,9 @@ void fmbuf_set_at(Framebuffer* this, size_t x, size_t y, uint32_t color) {
     debug_assert(x < this->width);
     debug_assert(y < this->height);
 
-    uint32_t* at = (uint32_t*)(((uint8_t*)this->addr) + this->pitch_bytes * y);
-    at[x] = color;
+    // uint32_t* at = (uint32_t*)(((uint8_t*)this->addr) + this->pitch_bytes * y);
+    // at[x] = color;
+    *((uint32_t*)((uintptr_t)this->addr + y * this->pitch_bytes + (x << 2))) = color;
 }
 #include "log.h"
 void fmbuf_draw_rect(Framebuffer* this, size_t left, size_t top, size_t right, size_t bottom, uint32_t color) {
@@ -21,10 +22,10 @@ void fmbuf_draw_rect(Framebuffer* this, size_t left, size_t top, size_t right, s
     if(left > right) swap_sz(left, right);
     if(top > bottom) swap_sz(top, bottom);
     debug_assert(left < this->width && right <= this->width);
-    if(!(top < this->height && bottom <= this->height)) {
-        kerror("top=%zu. bottom=%zu. height=%zu", top, bottom, this->height);
-        assert(false && "exit");
-    }
+    // if(!(top < this->height && bottom <= this->height)) {
+        // kerror("top=%zu. bottom=%zu. height=%zu", top, bottom, this->height);
+        // assert(false && "exit");
+    // }
 
     uint32_t* at = (uint32_t*)this->addr;
     at = (uint32_t*)(((uint8_t*)at) + this->pitch_bytes * top);
@@ -37,15 +38,19 @@ void fmbuf_draw_rect(Framebuffer* this, size_t left, size_t top, size_t right, s
 }
 
 void fmbuf_scroll_up(Framebuffer* this, size_t rows, uint32_t bg) {
-    debug_assert(this->height >= rows);
-    uint8_t* addr=this->addr;
-    uint8_t* head=this->addr+rows*this->pitch_bytes;
-    size_t from  =this->height-rows;
-    size_t row_bytes = this->width*(this->bpp/8);
-    for(size_t y = 0; y < from; ++y) {
-        memcpy(addr, head, row_bytes);
-        addr+=this->pitch_bytes;
-        head+=this->pitch_bytes;
-    }
-    fmbuf_draw_rect(this, 0, from, this->width, this->height, bg);
+    // debug_assert(this->height >= rows);
+    // uint8_t* addr=this->addr;
+    // uint8_t* head=this->addr+rows*this->pitch_bytes;
+    // size_t from  =this->height-rows;
+    // size_t row_bytes = this->width*(this->bpp/8);
+    // for(size_t y = 0; y < from; ++y) {
+        // memcpy(addr, head, row_bytes);
+        // addr+=this->pitch_bytes;
+        // head+=this->pitch_bytes;
+    // }
+    // fmbuf_draw_rect(this, 0, from, this->width, this->height, bg);
+    size_t visible_rows = this->height - rows;
+    size_t copy_bytes = visible_rows * this->pitch_bytes;
+    memmove(this->addr, (uint8_t*)this->addr + rows * this->pitch_bytes, copy_bytes);
+    fmbuf_draw_rect(this, 0, visible_rows, this->width, this->height, bg);
 }

@@ -579,7 +579,7 @@ intptr_t sys_send(uintptr_t sockfd, const void *buf, size_t len) {
     Process* current = current_process();
     Resource* res = resource_find_by_id(current->resources, sockfd);
     if(!res) return -INVALID_HANDLE;
-    if(!(res->flags & O_NONBLOCK)) block_is_writeable(current_task(), res->inode);
+    if(!(res->flags & O_NONBLOCK) && !inode_is_writeable(res->inode)) block_is_writeable(current_task(), res->inode);
     return inode_write(res->inode, buf, len, res->offset);
 }
 // TODO: strace

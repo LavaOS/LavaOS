@@ -10,7 +10,7 @@
 int main() {
     setenv("PATH", "/user:", 0);
     intptr_t e = fork();
-    const char* path = "/user/wm";
+    const char* path = "/user/shell";
     if(e == (-YOU_ARE_CHILD)) {
         const char* argv[] = { path, NULL };
         if((e=execve(path, (char*const*) argv, (char*const*)environ)) < 0) {

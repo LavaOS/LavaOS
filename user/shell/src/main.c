@@ -193,7 +193,7 @@ int main() {
     int exit_code = 0;
 
     while(running) {
-        printf("%s LavaShell >> ", cwd);
+        printf("[root@lavaos %s]# ", cwd);
         arena_reset(&arena);
         arg_count=0;
         fflush(stdout);

@@ -49,7 +49,6 @@ intptr_t ptty_spawn_shell(Ptty* ptty) {
             fprintf(stderr, "ERROR: Failed to open pts (%s): %s\n", name, status_str(e));
             return 1;
         }
-        // assert(e == STDERR_FILENO);
         const char* argv[] = {
             "shell", NULL
         };
