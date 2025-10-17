@@ -233,7 +233,7 @@ int main(int argc, char** argv) {
         "vendor/limine/limine-bios.sys", 
         "vendor/limine/limine-bios-cd.bin",
         "vendor/limine/limine-uefi-cd.bin",
-        "limine.cfg"
+        "limine.conf"
     };
     for(size_t i = 0; i < ARRAY_LEN(iso_files); ++i) {
         size_t temp = nob_temp_save();
