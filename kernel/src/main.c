@@ -44,6 +44,7 @@
 #include "sockets/minos.h"
 #include "smp.h"
 #include "mem/shared_mem.h"
+#include "printk.h"
 
 #include "term/fb/fb.h"
 
@@ -78,29 +79,29 @@ void _start() {
     KERNEL_SWITCH_VTABLE();
     enable_cpu_features();
     // Interrupt controller Initialisation
-    kinfo("Starting acpi handler...");
+    printk("Starting acpi handler...");
     init_pic();
     init_acpi();
-    kinfo("Started acpi handler.");
+    printk("Started acpi handler.");
     enable_interrupts();
     // Caches
-    kinfo("Configuring caches...");
+    printk("Configuring caches...");
     init_cache_cache();
     minos_socket_init_cache();
     init_epoll_cache();
     init_general_caches();
     init_charqueue();
-    kinfo("Caches are ok.");
+    printk("Caches are ok.");
     // Devices
-    kinfo("Initilazing devices...");
-    kinfo("Loading pci...");
+    printk("Initilazing devices...");
+    printk("Loading pci...");
     init_pci();
     // SMP
-    kinfo("Loading smp...");
+    printk("Loading smp...");
     init_smp();
-    kinfo("Devices loaded.");
+    printk("Devices loaded.");
     // Initialisation for process related things
-    kinfo("Configuring memory...");
+    printk("Configuring memory...");
     init_memregion();
     init_processes();
     init_tasks();
@@ -110,7 +111,7 @@ void _start() {
     init_resources();
     init_shm_cache();
     // VFS
-    kinfo("Initilazing filesystms...");
+    printk("Initilazing filesystms...");
     init_vfs();
     init_rootfs();
     init_devices();
