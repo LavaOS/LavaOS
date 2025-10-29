@@ -67,6 +67,11 @@ static bool build(Build*, Cmd* cmd) {
     if(!nob_mkdir_if_not_exists_silent("initrd")) return false;
     if(!nob_mkdir_if_not_exists_silent("extras")) return false;
     if(!nob_mkdir_if_not_exists_silent("initrd/user")) return false;
+    if(!nob_mkdir_if_not_exists_silent("initrd/sbin")) return false;
+    if(!nob_mkdir_if_not_exists_silent("initrd/home")) return false;
+    if(!nob_mkdir_if_not_exists_silent("initrd/root")) return false;
+    if(!nob_mkdir_if_not_exists_silent("initrd/etc")) return false;
+    if(!nob_mkdir_if_not_exists_silent("initrd/sys")) return false;
     setenv("BINDIR"   , nob_temp_realpath("bin"), 1);
     if(!getenv("CC")) setenv("CC"       , "cc", 1);
     if(!getenv("LD")) setenv("LD"       , "ld", 1);
@@ -153,7 +158,8 @@ static void help(const char* exe) {
         fprintf(stderr, "%*s - %s\n", align, subcmds[i].name, subcmds[i].desc);
     }
 }
-static bool bootstrap_submodules(Cmd* cmd) {
+static bool prepare(Cmd* cmd) {
+    cmd_append(cmd, "./check");
     cmd_append(cmd, "sh", "-c", "git submodule update --init --recursive --remote user/libc && git submodule update --init --recursive --remote user/doomgeneric");
     return cmd_run_sync_and_reset(cmd);
 }
@@ -167,9 +173,9 @@ const char* default_config =
      "//// Enable Jake colorscheme for framebuffers\n"
      "// #define JAKE_COLORSCHEME\n";
 int main(int argc, char** argv) {
-    NOB_GO_REBUILD_URSELF(argc, argv);
     Cmd cmd = { 0 };
-    if(!bootstrap_submodules(&cmd)) nob_log(NOB_ERROR, "Failed to bootstrap submodule!");
+    NOB_GO_REBUILD_URSELF(argc, argv);
+    if(!prepare(&cmd)) nob_log(NOB_ERROR, "Failed to bootstrap submodule!");
     if(!file_exists("config.h") && !write_entire_file("config.h", default_config, strlen(default_config))) return 1;
     Build build = { 0 };
     build.exe = shift_args(&argc, &argv),

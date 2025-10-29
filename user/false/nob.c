@@ -4,7 +4,7 @@
 #ifndef MINOS_ROOT
 #   define MINOS_ROOT "../../"
 #endif
-#define EXE      "ptest"
+#define EXE      "false"
 #define BUILD_DIR MINOS_ROOT "bin/" EXE "/"
 #if 1
 #   define COPY_DIR MINOS_ROOT "initrd/user/"

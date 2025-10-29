@@ -1,0 +1,35 @@
+#!/bin/bash
+LC_ALL=C
+PATH=/usr/bin:/bin
+bail() { echo "FATAL: $1"; exit 1; }
+grep --version > /dev/null 2> /dev/null || bail "grep does not work"
+sed '' /dev/null || bail "sed does not work"
+sort /dev/null || bail "sort does not work"
+ver_check()
+{
+if ! type -p $2 &>/dev/null
+then
+echo "ERROR: Cannot find $2 ($1)"; return 1;
+fi
+v=$($2 --version 2>&1 | grep -E -o '[0-9]+\.[0-9\.]+[a-z]*' | head -n1)
+if printf '%s\n' $3 $v | sort --version-sort --check &>/dev/null
+then
+printf "OK: %-9s %-6s >= $3\n" "$1" "$v"; return 0;
+else
+printf "ERROR: %-9s is TOO OLD ($3 or later required)\n" "$1";
+return 1;
+fi
+}
+ver_check Binutils ld 2.45.0
+ver_check Bison bison 3.8.2
+ver_check Diffutils diff 3.12
+ver_check Findutils find 4.10.0
+ver_check Gawk gawk 5.3.2
+ver_check GCC gcc 15.2.1
+ver_check Grep grep 3.12
+ver_check Gzip gzip 1.14
+ver_check Git git 2.51.2
+ver_check Patch patch 2.8
+ver_check Tar tar 1.35
+ver_check Xz xz 5.8.1
+ver_check Xorriso xorriso 1.5.6

@@ -5,6 +5,7 @@
 #include "utils.h"
 #include "log.h"
 #include <limine.h>
+
 extern volatile struct limine_memmap_request limine_memmap_request;
 
 static volatile struct limine_framebuffer_request limine_framebuffer_request = {

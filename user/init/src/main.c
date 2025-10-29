@@ -8,7 +8,7 @@
 #include <stdlib.h>
 
 int main() {
-    setenv("PATH", "/user:", 0);
+    setenv("PATH", "/user:/sbin:", 0);
     intptr_t e = fork();
     const char* path = "/user/wm";
     if(e == (-YOU_ARE_CHILD)) {

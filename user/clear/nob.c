@@ -7,7 +7,7 @@
 #define EXE      "clear"
 #define BUILD_DIR MINOS_ROOT "bin/" EXE "/"
 #if 1
-#   define COPY_DIR MINOS_ROOT "initrd/user/"
+#   define COPY_DIR MINOS_ROOT "initrd/sbin/"
 #endif
 
 #define c_compiler(cmd)     nob_cmd_append(cmd, "x86_64-minos-gcc")

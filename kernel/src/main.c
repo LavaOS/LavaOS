@@ -53,7 +53,7 @@ void spawn_init(void) {
     const char* epath = NULL;
     Args args;
     Args env;
-    epath = "/init";
+    epath = "/sbin/init";
     const char* argv[] = {epath, "test_arg", NULL};
     args = create_args(argv);
     const char* envv[] = {"FOO=BAR", "BAZ=A", NULL};
@@ -94,10 +94,10 @@ void _start() {
     printk("Caches are ok.");
     // Devices
     printk("Initilazing devices...");
-    printk("Loading pci...");
+    printk("Loading PCI...");
     init_pci();
     // SMP
-    printk("Loading smp...");
+    printk("Loading SMP...");
     init_smp();
     printk("Devices loaded.");
     // Initialisation for process related things

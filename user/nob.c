@@ -4,6 +4,8 @@
 
 
 const char* projects[] = {
+    "true",
+    "false",
     "clear",
     "ansi_test",
     "libwm",
@@ -23,8 +25,6 @@ const char* projects[] = {
     // "my_basic",
     "math",
     "mimux",
-    "phoenix",
-    "ptest",
     "reboot",
     "shell",
     "simpdump",

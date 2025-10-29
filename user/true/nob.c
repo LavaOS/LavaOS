@@ -4,10 +4,10 @@
 #ifndef MINOS_ROOT
 #   define MINOS_ROOT "../../"
 #endif
-#define EXE      "reboot"
+#define EXE      "true"
 #define BUILD_DIR MINOS_ROOT "bin/" EXE "/"
 #if 1
-#   define COPY_DIR MINOS_ROOT "initrd/sbin/"
+#   define COPY_DIR MINOS_ROOT "initrd/user/"
 #endif
 
 #define c_compiler(cmd)     nob_cmd_append(cmd, "x86_64-minos-gcc")
