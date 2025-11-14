@@ -4,6 +4,8 @@
 
 
 const char* projects[] = {
+    "librtc",
+    "time",
     "true",
     "false",
     "clear",
@@ -30,7 +32,6 @@ const char* projects[] = {
     "simpdump",
     "shutdown",
     "yes",
-    // "tinycc",
     "wm",
     "miniterm"
 };

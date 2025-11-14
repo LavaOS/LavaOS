@@ -9,11 +9,6 @@ static Cache* fbd_cache=NULL;
 typedef struct {
     Framebuffer fb;
 } FbDevice;
-// void destroy_fb_device(Device* device) {
-//     if(!device || !device->priv) return;
-//     FbDevice* fbd = device->priv;
-//     cache_dealloc(fbd_cache, fbd);
-// }
 static intptr_t fb_get_stats(FbDevice* device, FbStats* stats) {
     stats->width = device->fb.width;
     stats->height = device->fb.height;

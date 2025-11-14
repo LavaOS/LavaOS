@@ -26,7 +26,7 @@ void init_rootfs(void) {
     }
     else kpanic("Bro you can't boot live iso without initrd :|"); // Initrd not found
     if(find_bootmodule(extras, &module)) {
-        if((e=ustar_unpack("/extras", module.data, module.size)) < 0) {
+        if((e=ustar_unpack("/", module.data, module.size)) < 0) {
             kerror("Failed to unpack: %s into root: %s", extras, status_str(e));
         }
     }

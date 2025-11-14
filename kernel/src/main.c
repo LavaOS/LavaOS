@@ -45,8 +45,10 @@
 #include "smp.h"
 #include "mem/shared_mem.h"
 #include "printk.h"
-
 #include "term/fb/fb.h"
+
+#include "delay.h"
+#include "rtc.h"
 
 void spawn_init(void) {
     intptr_t e = 0;
@@ -79,29 +81,29 @@ void _start() {
     KERNEL_SWITCH_VTABLE();
     enable_cpu_features();
     // Interrupt controller Initialisation
-    printk("Starting acpi handler...");
+    printk("Starting Interrupt controller...\n");
     init_pic();
     init_acpi();
-    printk("Started acpi handler.");
+    printk("Started Interrupt controller.\n");
     enable_interrupts();
     // Caches
-    printk("Configuring caches...");
+    printk("Configuring caches...\n");
     init_cache_cache();
     minos_socket_init_cache();
     init_epoll_cache();
     init_general_caches();
     init_charqueue();
-    printk("Caches are ok.");
+    printk("Caches are ok.\n");
     // Devices
-    printk("Initilazing devices...");
-    printk("Loading PCI...");
+    printk("Initilazing devices...\n");
+    printk("Loading PCI...\n");
     init_pci();
     // SMP
-    printk("Loading SMP...");
+    printk("Loading SMP...\n");
     init_smp();
-    printk("Devices loaded.");
+    printk("Devices loaded.\n");
     // Initialisation for process related things
-    printk("Configuring memory...");
+    printk("Configuring memory...\n");
     init_memregion();
     init_processes();
     init_tasks();
@@ -110,12 +112,26 @@ void _start() {
     init_task_switch();
     init_resources();
     init_shm_cache();
+
+    disable_interrupts();
+    calibrate_tsc();
+    printk("CPU calibrated at ~%llu Hz\n", tsc_hz);
+
+    delay(1);
+    printk("1 second passed!\n");
+
+    rtc_init();
+    rtc_print_time();
+
     // VFS
-    printk("Initilazing filesystms...");
+    enable_interrupts();
+    printk("Initilazing filesystms...\n");
     init_vfs();
     init_rootfs();
     init_devices();
     init_tty();
+
+    printk("Spawning init...\n");
 
     spawn_init();
 

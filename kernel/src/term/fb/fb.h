@@ -7,8 +7,10 @@
 #define VGA_FG 0xa4ada6
 #define VGA_BG 0x24283b
 #else
-#define VGA_FG 0xececec
-#define VGA_BG 0x212121
+// #define VGA_FG 0xececec
+#define VGA_FG 0xFFFFFF
+// #define VGA_BG 0x212121
+#define VGA_BG 0x000000
 #endif
 
 typedef struct Inode Inode;

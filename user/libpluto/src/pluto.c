@@ -22,6 +22,7 @@ static int minos_connectto(const char* addr) {
     strcpy(server_addr.sminos_path, addr);
     if(connect(fd, (struct sockaddr*)&server_addr, sizeof(server_addr)) < 0) {
         fprintf(stderr, "connect %s: %s\n", addr, strerror(errno));
+        free(fd);
         close(fd);
         return -errno;
     }

@@ -42,16 +42,13 @@ void _start(int argc, const char** argv, const char** envp) {
     _libc_init_environ(envp);
     _libc_init_streams();
     fprintf(stderr, "\033[2J\033[H");
-    printf("Args dump:\n");
-    for(size_t i = 0; i < (size_t)argc; ++i) {
-        printf("%zu> ",i+1); printf("%p",argv[i]); printf(" %s\n",argv[i]);
-    }
-    printf("Env dump:\n");
-    for(size_t i = 0; envp[i]; ++i) {
-        printf("%zu> ",i+1); printf("%p",envp[i]); printf(" %s\n",envp[i]);
-    }
     int code = main();
+    free(STDOUT_FILENO);
     close(STDOUT_FILENO);
-    if(STDIN_FILENO != STDOUT_FILENO) close(STDIN_FILENO);
+    if(STDIN_FILENO != STDOUT_FILENO) {
+        free(STDIN_FILENO);
+        close(STDIN_FILENO);
+    }
+    free(code);
     exit(code);
 }

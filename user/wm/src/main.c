@@ -801,6 +801,7 @@ uintptr_t run(size_t applet_number, char** argv) {
     intptr_t e = fork();
     if(e == -YOU_ARE_CHILD) {
 #if 1
+        free(STDOUT_FILENO);
         close(STDOUT_FILENO);
         char pathbuf[120];
         sprintf(pathbuf, "/applet%zu.log", applet_number);
