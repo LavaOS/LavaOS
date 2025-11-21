@@ -91,9 +91,7 @@ static bool run(Build* build, Cmd* cmd) {
         "-smp", "2",
         "-m", "128",
         "-cdrom", "./bin/OS.iso",
-	"-device", "isa-debug-exit,iobase=0xf4,iosize=0x04", "-enable-kvm", "-cpu", "host",
-        "-drive", "if=pflash,format=raw,unit=0,readonly=on,file=uefi_code.fd",
-        "-drive", "if=pflash,format=raw,unit=1,file=uefi_vars.fd"
+	"-device", "isa-debug-exit,iobase=0xf4,iosize=0x04", "-enable-kvm", "-cpu", "host"
     );
     if(build->uefi) {
         const char* ovmf = getenv("OVMF");

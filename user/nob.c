@@ -6,6 +6,7 @@
 const char* projects[] = {
     "librtc",
     "time",
+    "dim",
     "true",
     "false",
     "clear",
