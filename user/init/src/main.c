@@ -7,33 +7,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-int main() {
-    setenv("PATH", "/user:/sbin:", 0);
-    intptr_t e = fork();
-    const char* path = "/user/wm";
-    if(e == (-YOU_ARE_CHILD)) {
-        const char* argv[] = { path, NULL };
-        if((e=execve(path, (char*const*) argv, (char*const*)environ)) < 0) {
-            printf("ERROR: Failed to do exec: %s\n", status_str(e));
-            exit(-e);
-        }
-        // Unreachable
-        exit(0);
-    } else if (e >= 0) {
-        size_t pid = e;
-        e=wait_pid(pid);
-        if(e == NOT_FOUND) {
-            printf("Could not find command `%s`\n", path);
-        } else {
-            printf("Child exited with: %d\n", (int)e);
-        }
-        exit(1);
-    } else {
-        printf("ERROR: fork %s\n",status_str(e));
-        exit(1);
-    }
-    return 0;
-}
 void _start(int argc, const char** argv, const char** envp) {
     intptr_t e;
     if((e = open("/devices/tty0", O_RDWR)) < 0) {
@@ -51,4 +24,35 @@ void _start(int argc, const char** argv, const char** envp) {
     }
     free(code);
     exit(code);
+}
+int main() {
+    setenv("PATH", "/user:/sbin:", 0);
+
+    const char* path = "/user/wm";
+
+    while (1) {
+        intptr_t e = fork();
+
+        if (e == (-YOU_ARE_CHILD)) {
+            const char* argv[] = { path, NULL };
+            e = execve(path, (char*const*)argv, (char*const*)environ);
+
+            printf("ERROR: exec failed: %s\n", status_str(e));
+            exit(-e);
+        }
+
+        else if (e >= 0) {
+            size_t pid = e;
+            intptr_t code = wait_pid(pid);
+
+            printf("\n[init] child exited with code %d ---- restarting...\n\n", code);
+        }
+
+        else {
+            printf("ERROR: fork %s\n", status_str(e));
+            exit(1);
+        }
+    }
+
+    return 0;
 }
