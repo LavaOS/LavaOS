@@ -159,7 +159,6 @@ static void help(const char* exe) {
     }
 }
 static bool prepare(Cmd* cmd) {
-    cmd_append(cmd, "./check");
     cmd_append(cmd, "sh", "-c", "git submodule update --init --recursive --remote user/libc && git submodule update --init --recursive --remote user/doomgeneric");
     return cmd_run_sync_and_reset(cmd);
 }
