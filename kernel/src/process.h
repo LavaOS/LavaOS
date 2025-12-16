@@ -56,3 +56,5 @@ intptr_t process_memreg_extend(Process* process, MemoryList* reglist, size_t ext
 static Process* current_process() {
     return current_task()->process;
 }
+
+void resume_process(size_t pid);

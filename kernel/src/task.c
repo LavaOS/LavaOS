@@ -9,6 +9,7 @@
 #include "interrupt.h"
 #include "apic.h"
 #include "arch/x86_64/idt.h"
+#include "scheduler.h"
 
 void init_tasks() {
     assert(kernel.task_cache = create_new_cache(sizeof(Task), "Task"));
@@ -52,4 +53,9 @@ void drop_task(Task* task) {
 
 Task* current_task(void) {
     return kernel.processors[get_lapic_id()].current_task;
+}
+
+void task_resume(Task* task) {
+    task->state = TASK_READY;
+    scheduler_enqueue(task);
 }

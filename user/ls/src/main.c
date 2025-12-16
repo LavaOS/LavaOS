@@ -246,5 +246,6 @@ int main(int argc, const char** argv) {
         }
         reset_entries(&entries);
     }
+    close(main);
     return 0;
 }

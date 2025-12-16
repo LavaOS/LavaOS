@@ -8,6 +8,14 @@
 #define INVALID_TASK_ID -1
 #include "thread_blocker.h"
 
+typedef enum {
+    TASK_RUNNING,
+    TASK_READY,
+    TASK_BLOCKED,
+    TASK_SLEEPING,
+    TASK_DEAD
+} TaskState;
+
 typedef struct Process Process;
 typedef struct Task {
     struct list list;
@@ -24,6 +32,8 @@ typedef struct Task {
     void* rsp;
     ThreadBlocker blocker;
     char name[4096];
+    TaskState state;
+    struct list sched_list;
 } Task;
 
 void init_tasks();
@@ -31,3 +41,4 @@ void init_kernel_task();
 Task* kernel_task_add();
 Task* current_task();
 void drop_task(Task* task);
+void task_resume(Task* task);

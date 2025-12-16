@@ -69,3 +69,28 @@ Args create_args(const char** argv) {
     }
     return (Args) { sum, argc, argv };
 }
+
+void resume_process(size_t pid) {
+    if (pid == INVALID_PROCESS_ID)
+        return;
+
+    mutex_lock(&kernel.processes_mutex);
+
+    if (pid >= kernel.processes.len) {
+        mutex_unlock(&kernel.processes_mutex);
+        return;
+    }
+
+    Process* process = kernel.processes.items[pid];
+    if (!process || !process->main_thread) {
+        mutex_unlock(&kernel.processes_mutex);
+        return;
+    }
+
+    Task* task = process->main_thread;
+
+    mutex_unlock(&kernel.processes_mutex);
+
+    // unblock / resume task
+    task_resume(task);
+}

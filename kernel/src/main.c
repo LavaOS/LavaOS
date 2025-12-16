@@ -46,6 +46,7 @@
 #include "mem/shared_mem.h"
 #include "printk.h"
 #include "term/fb/fb.h"
+#include "ide/ide.h"
 
 #include "delay.h"
 #include "rtc.h"
@@ -122,6 +123,10 @@ void _start() {
 
     rtc_init();
     rtc_print_time();
+
+    printk("Starting IDE...\n");
+    ide_init();
+    delay(1);
 
     // VFS
     enable_interrupts();

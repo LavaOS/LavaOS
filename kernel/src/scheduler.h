@@ -9,3 +9,4 @@ typedef struct {
 } Scheduler;
 void init_schedulers(void);
 Task* task_select(Scheduler* scheduler);
+void scheduler_enqueue(Task* task);
