@@ -135,6 +135,10 @@ static bool disasm(Build*, Cmd* cmd) {
     cmd_append(cmd, "objdump", "-M", "intel", "--disassemble", "./bin/iso/kernel");
     return cmd_run_sync_and_reset(cmd);
 }
+static bool clean(Build*, Cmd* cmd) {
+    cmd_append(cmd, "rm", "-r", "bin/", "initrd/");
+    return cmd_run_sync_and_reset(cmd);
+}
 struct {
     const char* name;
     bool (*run)(Build*, Cmd*);
@@ -146,6 +150,7 @@ struct {
     { "disasm", disasm, "Disassemble the kernel binary" },
     { "gdb"   , gdb   , "Run gdb" },
     { "telnet", telnet, "Run telnet for remote debugging" },
+    { "clean" , clean , "Clean the build directory" },
 };
 
 static void help(const char* exe) {

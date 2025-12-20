@@ -8,7 +8,7 @@
 #define VGA_BG 0x24283b
 #else
 // #define VGA_FG 0xececec
-#define VGA_FG 0xFFFFFF
+#define VGA_FG 0xC0C0C0
 // #define VGA_BG 0x212121
 #define VGA_BG 0x000000
 #endif

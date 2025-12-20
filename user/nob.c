@@ -24,6 +24,7 @@ const char* projects[] = {
     "minofetch",
     "hello_window",
     "init",
+    "login",
     "ls",
     // "my_basic",
     "math",
@@ -34,6 +35,7 @@ const char* projects[] = {
     "shutdown",
     "yes",
     "wm",
+    "whoami",
     "miniterm"
 };
 bool go_run_nob_inside(Nob_Cmd* cmd, const char* dir, const char** argv, size_t argc) {

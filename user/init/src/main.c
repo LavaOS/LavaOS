@@ -28,31 +28,24 @@ void _start(int argc, const char** argv, const char** envp) {
 int main() {
     setenv("PATH", "/user:/sbin:", 0);
 
-    const char* path = "/user/wm";
+    const char* path = "/sbin/login";
+    const char* argv[] = { path, NULL };
 
-    while (1) {
-        intptr_t e = fork();
-
-        if (e == (-YOU_ARE_CHILD)) {
-            const char* argv[] = { path, NULL };
-            e = execve(path, (char*const*)argv, (char*const*)environ);
-
-            printf("ERROR: exec failed: %s\n", status_str(e));
-            exit(-e);
-        }
-
-        else if (e >= 0) {
-            size_t pid = e;
-            intptr_t code = wait_pid(pid);
-
-            printf("\n[init] child exited with code %d ---- restarting...\n\n", code);
-        }
-
-        else {
-            printf("ERROR: fork %s\n", status_str(e));
-            exit(1);
-        }
+    intptr_t pid = fork();
+    if (pid == (-YOU_ARE_CHILD)) {
+        execve(path, (char*const*)argv, (char*const*)environ);
+        printf("init: exec failed\n");
+        exit(1);
     }
 
-    return 0;
+    if (pid < 0) {
+        printf("init: fork failed\n");
+        exit(1);
+    }
+
+    intptr_t code = wait_pid(pid);
+    printf("\n[init] session ended (code %ld)\n", code);
+
+    printf("[init] system halted\n");
+    for (;;);
 }

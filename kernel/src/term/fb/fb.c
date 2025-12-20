@@ -5,7 +5,10 @@
 #include <log.h>
 #include <minos/keycodes.h>
 #include <minos/key.h>
+#include "../../delay.h"
+
 #define KEY_BYTES ((MINOS_KEY_COUNT+7)/8)
+
 typedef struct {
     // Is key down?
     uint8_t state[KEY_BYTES];

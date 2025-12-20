@@ -71,7 +71,7 @@ int main(int argc, char **argv) {
                 "-Wall", "-Wextra", "-Wno-unused-function",
                 "-ffunction-sections", "-fdata-sections", "-mgeneral-regs-only",
                 "-pie", "-fpie",
-                "-nostdlib", "-nolibc", "-ffreestanding",
+                "-nostdlib"/*, "-nolibc"*/, "-ffreestanding",
                 "-static", "-g", "-MD",
                 "-c",
                 src, "-o", obj
@@ -81,7 +81,7 @@ int main(int argc, char **argv) {
     }
     const char* exe = temp_sprintf("%s/dynld/dynld", bindir);
     if(needs_rebuild(exe, objs.items, objs.count)) {
-        cmd_append(&cmd, cc, "-pie", "-fpie", "-nostdlib", "-nolibc", "-ffreestanding", "-static", "-g");
+        cmd_append(&cmd, cc, "-pie", "-fpie", "-nostdlib"/*, "-nolibc"*/, "-ffreestanding", "-static", "-g");
         da_append_many(&cmd, objs.items, objs.count);
         cmd_append(&cmd, "-o", exe);
         if(!cmd_run_sync_and_reset(&cmd)) return 1;

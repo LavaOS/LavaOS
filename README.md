@@ -9,12 +9,16 @@
   - [Sinux Kernel (amirh1385 fork, Original project:https://github.com/CyberSinook/Sinux)](https://github.com/amirh1385/Sinux), licensed under the **MIT License** (see `licenses/LICENSE.SINUX`).
 - All third-party licenses are preserved in this repository as required.
 
-### Visit our website:
+### ⚠️ Visit our website:
 https://lavaos.github.io/getlavaos/
+
+## ⚠️ Important announcement
+The ISO files were removed from GitHub and uploaded to the MEGA platform.
+MEGA folder link: https://mega.nz/folder/bQEhmZqb#LN9cA3Qu-dyBoR8jMR_9zQ
 
 ![banner](banner.png)
 
-# LavaOS 🔥
+# 🔥 LavaOS
 
 **LavaOS** is a free and open-source Unix-like operating system, forked from [MinOS](https://github.com/Dcraftbg/MinOS).  
 It aims to be minimalist, hackable, and blazing fast — powered by a custom bootstrapping compiler (`nob.c`) and a raw, low-level design.
