@@ -15,6 +15,7 @@ https://lavaos.github.io/getlavaos/
 ## ⚠️ Important announcement
 The ISO files were removed from GitHub and uploaded to the MEGA platform.
 MEGA folder link: https://mega.nz/folder/bQEhmZqb#LN9cA3Qu-dyBoR8jMR_9zQ
+Nightly branch: https://mega.nz/folder/WAVDzAAR#0A-jnREK9e3MMW2p7oHgDA
 
 ![banner](banner.png)
 
