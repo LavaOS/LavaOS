@@ -67,44 +67,55 @@ void spawn_init(void) {
 void _start() {
     disable_interrupts();
     BREAKPOINT();
+
+    printk("Welcome to LavaOS!\n\n");
+    delay(3);
+
+    printk("[WAIT] Initilazing serial...\n");
     serial_init();
     kernel.logger = &serial_logger;
     kernel.logger->level = LOG_ALL;
+    printk("[ OK ] Initilazed serial.\n");
+    printk("[WAIT] Initilazing cmdline...\n");
     init_cmdline();
+    printk("[ OK ] Initilazed cmdline.\n");
+    printk("[WAIT] Initilazing loggers...\n");
     init_loggers();
+    printk("[ OK ] Initilazed loggers.\n");
+    printk("[WAIT] Initilazing GDT and IDT...\n");
     init_gdt();
     disable_interrupts();
     init_idt();
+    printk("[ OK ] Initilazed GDT and IDT.\n");
+    printk("[WAIT] Initilazing essential components and devices...\n");
     init_exceptions();
     reload_tss();
     init_bitmap();
     init_paging();
     KERNEL_SWITCH_VTABLE();
     enable_cpu_features();
-    // Interrupt controller Initialisation
-    printk("Starting Interrupt controller...\n");
+    printk("[ OK ] Initilazed essential components and devices.\n");
+    printk("[WAIT]Starting Interrupt controller...\n");
     init_pic();
     init_acpi();
-    printk("Started Interrupt controller.\n");
+    printk("[ OK ]Started Interrupt controller.\n");
     enable_interrupts();
     // Caches
-    printk("Configuring caches...\n");
+    printk("[WAIT] Configuring caches...\n");
     init_cache_cache();
     minos_socket_init_cache();
     init_epoll_cache();
     init_general_caches();
     init_charqueue();
-    printk("Caches are ok.\n");
+    printk("[ OK ] Configured caches.\n");
     // Devices
-    printk("Initilazing devices...\n");
-    printk("Loading PCI...\n");
+    printk("[VERB] Loading PCI...\n");
     init_pci();
     // SMP
-    printk("Loading SMP...\n");
+    printk("[VERB] Loading SMP...\n");
     init_smp();
-    printk("Devices loaded.\n");
     // Initialisation for process related things
-    printk("Configuring memory...\n");
+    printk("[VERB] Configuring memory...\n");
     init_memregion();
     init_processes();
     init_tasks();
@@ -114,29 +125,28 @@ void _start() {
     init_resources();
     init_shm_cache();
 
+    printk("[WAIT] Initilazing RTC...\n");
     disable_interrupts();
     calibrate_tsc();
-    printk("CPU calibrated at ~%llu Hz\n", tsc_hz);
-
-    delay(1);
-    printk("1 second passed!\n");
-
+    printk("[VERB] CPU calibrated at ~%llu Hz\n", tsc_hz);
     rtc_init();
+    printk("[WAIT] Initilazed RTC.\n");
     rtc_print_time();
 
-    printk("Starting IDE...\n");
+    printk("[VERB] Starting IDE...\n");
     ide_init();
-    delay(1);
 
     // VFS
     enable_interrupts();
-    printk("Initilazing filesystms...\n");
+    printk("[WAIT] Initilazing filesystms...\n");
     init_vfs();
     init_rootfs();
+    printk("[ OK ] Initilazed filesystms.\n");
+    printk("[VERB] Initilazing VFS devices...\n");
     init_devices();
     init_tty();
 
-    printk("Spawning init...\n");
+    printk("[VERB] Spawning init...\n");
 
     spawn_init();
 

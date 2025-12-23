@@ -65,8 +65,11 @@ int main(void) {
     char username[MAX_INPUT];
     char password[MAX_INPUT];
 
+    const char* hostname = getenv("HOSTNAME");
+
     while (true) {
-        write(STDOUT_FILENO, "login: ", 7);
+        write(STDOUT_FILENO, hostname, strlen(hostname));
+        write(STDOUT_FILENO, " login: ", 8);
         read_line(username, sizeof(username));
 
         write(STDOUT_FILENO, "password: ", 10);
@@ -79,12 +82,13 @@ int main(void) {
             write(STDOUT_FILENO, username, strlen(username));
             write(STDOUT_FILENO, "!\n\n", 3);
 
-            setenv("USER", username, 1);
+            setenv("USER", username, 2);
 
-            const char* path = "/sbin/shell";
+            const char* path = "/user/wm";
             char* const argv[] = { (char*)path, NULL };
 
             execve(path, argv, environ);
+            setenv("AFTERLOGIN", path, 3);
 
             write(STDOUT_FILENO,
                   "login: failed to start shell\n",

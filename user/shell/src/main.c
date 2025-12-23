@@ -193,7 +193,14 @@ int main() {
     int exit_code = 0;
 
     while(running) {
-        printf("[root@lavaos %s]# ", cwd);
+        const char* h = getenv("HOSTNAME");
+        const char* u = getenv("USER");
+
+        printf(u);
+        printf(" | ");
+        printf(h);
+        printf(" %s >> ", cwd);
+
         arena_reset(&arena);
         arg_count=0;
         fflush(stdout);

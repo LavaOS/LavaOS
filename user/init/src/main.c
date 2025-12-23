@@ -26,10 +26,16 @@ void _start(int argc, const char** argv, const char** envp) {
     exit(code);
 }
 int main() {
+    printf("[VERB] Setting path...\n");
     setenv("PATH", "/user:/sbin:", 0);
+    printf("[VERB] Setting hostname...\n");
+    setenv("HOSTNAME", "lavaos", 1);
 
-    const char* path = "/sbin/login";
+    const char* path = "/etc/init.d/login";
     const char* argv[] = { path, NULL };
+
+    printf("\033[2J\033[H");
+    fflush(stdout);
 
     intptr_t pid = fork();
     if (pid == (-YOU_ARE_CHILD)) {
