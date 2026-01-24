@@ -2,6 +2,7 @@
 #include "log.h"
 #include "acpi.h"
 #include "apic.h"
+#include "printk.h"
 
 typedef struct {
     ACPISDTHeader header;
@@ -145,13 +146,13 @@ void init_apic() {
     ACPISDTHeader* apic_header = acpi_find("APIC"); 
     if(!apic_header) return;
     if(apic_header->length < sizeof(APIC)) {
-        kerror("(APIC) Length was odd");
+        printk("(APIC) Length was odd");
         goto length_check_err;
     }
     APIC* apic = (APIC*)apic_header;
     lapic_addr = iomap_bytes(apic->lapic_addr, 4096, KERNEL_PFLAG_PRESENT | KERNEL_PFLAG_WRITE | KERNEL_PFLAG_WRITE_THROUGH);
     if(!lapic_addr) {
-        kerror("LAPIC not enough memory to map in lapic");
+        printk("LAPIC not enough memory to map in lapic");
         goto lapic_addr_err;
     }
     for(
@@ -162,7 +163,7 @@ void init_apic() {
         switch(entry->type) {
         case MADT_ENTRY_OVERRIDE: {
             if(entry->length < sizeof(InterruptOverrideEntry)) {
-                kerror("InterruptOverrideEntry entry with size < %zu (size=%zu)", sizeof(InterruptOverrideEntry), entry->length);
+                printk("InterruptOverrideEntry entry with size < %zu (size=%zu)", sizeof(InterruptOverrideEntry), entry->length);
                 continue;
             }
             InterruptOverrideEntry* io_entry = (InterruptOverrideEntry*)entry;
@@ -174,13 +175,13 @@ void init_apic() {
         } break;
         case MADT_ENTRY_IOAPIC: {
             if(entry->length < sizeof(IOApicEntry)) {
-                kerror("IOAPIC entry with size < %zu (size=%zu)", sizeof(IOApicEntry), entry->length);
+                printk("IOAPIC entry with size < %zu (size=%zu)", sizeof(IOApicEntry), entry->length);
                 continue;
             }
             IOApicEntry* ioapic_entry = (IOApicEntry*)entry;
             void* new_ioapic_addr = iomap_bytes(ioapic_entry->ioapic_addr, IOAPIC_ADDR_SPACE_SIZE, KERNEL_PFLAG_WRITE | KERNEL_PFLAG_PRESENT | KERNEL_PFLAG_WRITE_THROUGH);
             if(!new_ioapic_addr) {
-                kerror("IOAPIC not enough memory to map it in");
+                printk("IOAPIC not enough memory to map it in");
                 continue;
             }
             if(ioapic.addr)

@@ -12,10 +12,10 @@
 #include <minos/status.h>
 #include <minos/fb/fb.h>
 #include <minos/mouse.h>
-#include <collections/list.h>
 #include "darray.h"
 #include <unistd.h>
 #include <fcntl.h>
+#include "list_head.h"
 
 #include <libwm.h>
 #include <libwm/tags.h>
@@ -117,7 +117,7 @@ typedef struct {
 } Image;
 typedef struct Client Client;
 typedef struct {
-    struct list list;
+    struct list_head list;
     char name[WINDOW_NAME_MAX];
     Rectangle rect;
     uint32_t* content;
@@ -147,7 +147,7 @@ typedef struct {
     size_t len, cap;
 } SHMRegions;
 typedef struct Client {
-    struct list list;
+    struct list_head list;
     int fd;
     Windows child_windows;
     SHMRegions shm_regions;
@@ -236,7 +236,7 @@ static Image icon_x    = { 0 }, icon_x_hover    = { 0 },
 static Window* moving_window = NULL;
 static int moving_window_dx = 0, moving_window_dy = 0;
 // (per workspace?)
-static struct list windows = { 0 };
+static struct list_head windows = { 0 };
 // ....
 static Framebuffer fb0;
 // Input state
@@ -365,8 +365,6 @@ static Rectangle window_get_content_rect(const Window* win) {
     };
 }
 static void window_redraw_region(const Framebuffer* fb, const Window* win, const Rectangle* rect) {
-    // static size_t n = 0;
-    // printf("%zu> Redrawing part of %08X\n", n++, win->clear_color);
     for(size_t i = 0; i < WINDOW_BORDER_COUNT; ++i) {
         Rectangle border_rect = window_get_border_rect(win, i);
         if(rect_collides(&border_rect, rect)) {
@@ -397,7 +395,7 @@ static void window_redraw_region(const Framebuffer* fb, const Window* win, const
 static void redraw_region(const Framebuffer* fb, const Rectangle* rect) {
     if(rect->l == rect->r || rect->b == rect->t) return;
     wallpaper_redraw_region(fb, rect);
-    for(struct list* head = windows.next; head != &windows; head = head->next) {
+    for(struct list_head* head = windows.next; head != &windows; head = head->next) {
         const Window* win = (Window*)head;
         if(rect_collides(rect, &win->rect)) {
             Rectangle area = rect_collision_rect(rect, &win->rect);
@@ -614,7 +612,7 @@ void client_thread(void* client_void) {
             size_t width = (content.r-content.l);
             size_t height = (content.b-content.t);
             da_push(&client->child_windows, window);
-            list_insert(&window->list, &windows);
+            list_insert(&windows, &window->list);
             redraw_region(&fb0, &window->rect);
             flush_framebuffer(&fb0);
             window->child_index = client->child_windows.len-1;
@@ -799,9 +797,8 @@ Client* client_new(int fd) {
 }
 uintptr_t run(size_t applet_number, char** argv) {
     intptr_t e = fork();
-    if(e == -YOU_ARE_CHILD) {
+    if(e == 0) {
 #if 1
-        free(STDOUT_FILENO);
         close(STDOUT_FILENO);
         char pathbuf[120];
         sprintf(pathbuf, "/applet%zu.log", applet_number);
@@ -827,7 +824,7 @@ void spawn_init_applets(void) {
         run(i, (char**)argv);
     }
 }
-static struct list clients;
+static struct list_head clients;
 intptr_t start_server(void) {
     int server = socket(AF_MINOS, SOCK_STREAM, 0);
     if(server < 0) {
@@ -860,7 +857,7 @@ intptr_t start_server(void) {
             close(client_fd);
             continue;
         }
-        list_insert(&client->list, &clients);
+        list_insert(&clients, &client->list);
         gtgo(client_thread, (void*)client);
     }
     return 0;
@@ -897,7 +894,7 @@ void handle_mouse_event(int what, int x, int y, int button) {
         break;
     case GUI_MOUSE_EVENT_DOWN: {
         Vec2size cursorp = cursor_point();
-        for(struct list* head = windows.next; head != &windows; head = head->next) {
+        for(struct list_head* head = windows.next; head != &windows; head = head->next) {
             Window* win = (Window*)head;
             if(rect_collide_point(&win->rect, &cursorp)) {
                 Rectangle content_rect = window_get_content_rect(win);
@@ -931,7 +928,7 @@ void handle_mouse_event(int what, int x, int y, int button) {
                     }
                 }
                 list_remove(&win->list);
-                list_append(&win->list, &windows);
+                list_append(&windows, &win->list);
                 // TODO: Optimise this to not redraw the entire window.
                 draw_window(&fb0, win);
                 draw_image(&fb0, &cursor, mouse_x, mouse_y);
@@ -1076,13 +1073,15 @@ void keyboard_thread(void*) {
     fill_rect(&fb0, &rect, 0xFF212121);
     flush_framebuffer(&fb0);
 
-    for(struct list* head = clients.next; head != &clients; head = head->next) {
+    for(struct list_head* head = clients.next; head != &clients; head = head->next) {
         Client* client = (Client*)head;
         close(client->fd);
     }
     exit(0);
 }
 int main(void) {
+    setenv("SESSION", "MinOS Window Manager (Running on pluto)", 3);
+
     intptr_t e;
     gtinit();
     list_init(&windows);

@@ -41,12 +41,12 @@ int main(void) {
         }
         for(size_t y = 0; y < height; ++y) {
             for(size_t x = 0; x < width; ++x) {
-                addr[y * width + x] = 0xFF111111;
+                addr[y * width + x] = 0xFF00FF00;
             }
         }
         for(size_t y = dvd_y; y < (size_t)dvd_y + dvd_h; ++y) {
             for(size_t x = dvd_x; x < (size_t)dvd_x + dvd_w; ++x) {
-                addr[y * width + x] = 0xFFFF0000;
+                addr[y * width + x] = 0xF0F0F0F0;
             }
         }
         pluto_draw_shm_region(&instance, &(WmDrawSHMRegion){

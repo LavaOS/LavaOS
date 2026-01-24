@@ -1,11 +1,11 @@
 #include "fb.h"
+#include "../../printk.h"
 #include <devices/tty/tty.h>
 #include <timer.h>
 #include <fbwriter.h>
 #include <log.h>
 #include <minos/keycodes.h>
 #include <minos/key.h>
-#include "../../delay.h"
 
 #define KEY_BYTES ((MINOS_KEY_COUNT+7)/8)
 
@@ -281,7 +281,7 @@ static void handle_csi_final(FbTty* fbtty, uint32_t code) {
             fbtty->bg = bit4_bold_colors[n - 100];
             break;
         default:
-            kerror("(fbtty) Unsupported SGR param: %d", n);
+            printk("(fbtty) Unsupported SGR param: %d", n);
             break;
         }
     } break;
@@ -309,7 +309,7 @@ static void handle_csi_final(FbTty* fbtty, uint32_t code) {
             fmbuf_fill(&fbtty->fb, fbtty->bg);
         } break;
         default:
-            kerror("(fbtty) Clear mode not supported (csi J)");
+            printk("(fbtty) Clear mode not supported (csi J)");
             break;
         }
     } break;
@@ -332,7 +332,7 @@ static void handle_csi_final(FbTty* fbtty, uint32_t code) {
         fbtty_fill_blink(fbtty, fbtty->fg);
     } break;
     default:
-        kerror("(fbtty) Unsupported csi final code: %c (%02X)", code, code);
+        printk("(fbtty) Unsupported csi final code: %c (%02X)", code, code);
         break;
     }
 }
@@ -402,7 +402,7 @@ static void fbtty_putchar(Tty* device, uint32_t code) {
             fbtty->csi.nums_count = 1;
             break;
         default:
-            kerror("(fbtty) Unsupported escape character %c (%02X)", code, code);
+            printk("(fbtty) Unsupported escape character %c (%02X)", code, code);
             fbtty->state = STATE_NORMAL;
         }
         break;
@@ -410,7 +410,7 @@ static void fbtty_putchar(Tty* device, uint32_t code) {
         switch(code) {
         case ';': {
             if(fbtty->csi.nums_count++ >= MAX_CSI_NUMS) {
-                kerror("(fbtty) Too many arguments in ANSI escape sequence");
+                printk("(fbtty) Too many arguments in ANSI escape sequence");
                 fbtty->csi.nums_count = 0;
                 fbtty->state = STATE_NORMAL;
                 memset(fbtty->csi.nums, 0, MAX_CSI_NUMS*sizeof(fbtty->csi.nums[0]));
@@ -436,7 +436,7 @@ static void fbtty_putchar(Tty* device, uint32_t code) {
             if(code >= 0x40 && code <= 0x7E) {
                 handle_csi_final(fbtty, code);
             } else {
-                kerror("(fbtty) Unsupported code in csi escape sequence: %c (%02X)", code, code);
+                printk("(fbtty) Unsupported code in csi escape sequence: %c (%02X)", code, code);
             }
             fbtty->state = STATE_NORMAL;
             fbtty->csi.nums_count = 0;
@@ -446,7 +446,7 @@ static void fbtty_putchar(Tty* device, uint32_t code) {
         }
         break;
     default:
-        kerror("Invalid state: %d", fbtty->state);
+        printk("Invalid state: %d", fbtty->state);
     }
     mutex_unlock(&device->mutex);
 }
@@ -459,11 +459,11 @@ static intptr_t fbtty_deinit(Tty* device) {
 Tty* fbtty_new(Inode* keyboard, size_t framebuffer_id) {
     Framebuffer fb = get_framebuffer_by_id(framebuffer_id);
     if(!fb.addr) {
-        kerror("(fbtty) Cannot create fbtty on framebuffer#%zu Framebuffer not existent", framebuffer_id);
+        printk("(fbtty) Cannot create fbtty on framebuffer#%zu Framebuffer not existent", framebuffer_id);
         return NULL;
     }
     if(fb.bpp != 32) {
-        kerror("(fbtty) Cannot create fbtty with bpp != 32 (bpp=%zu for framebuffer#%zu)", fb.bpp, framebuffer_id);
+        printk("(fbtty) Cannot create fbtty with bpp != 32 (bpp=%zu for framebuffer#%zu)", fb.bpp, framebuffer_id);
         return NULL;
     }
     FbTty* fbtty = fbtty_new_internal(keyboard, fb);

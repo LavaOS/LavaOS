@@ -1,4 +1,5 @@
 #include "tmpfs.h"
+#include "../../printk.h"
 #include <vfs.h>
 #include <utils.h>
 #include <mem/slab.h>
@@ -215,7 +216,7 @@ static intptr_t tmpfs_truncate(Inode* file, size_t size) {
             head = head->next;
         }
         if(n < inode->inode.size) {
-            kerror("File corruption. n=%zu inode->inode.size=%zu", n, inode->inode.size);
+            printk("File corruption. n=%zu inode->inode.size=%zu", n, inode->inode.size);
             return -FILE_CORRUPTION;
         }
         TmpfsData* start = head = prev;

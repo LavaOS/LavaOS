@@ -1,4 +1,5 @@
 #include "ptm.h"
+#include "../../printk.h"
 #include <log.h>
 #include <mem/slab.h>
 #include <minos/ptm/ptm.h>
@@ -263,7 +264,7 @@ intptr_t init_ptm(void) {
     Inode* ptm = new_inode();
     ptm->ops = &inodeOps;
     if((e=vfs_register_device("ptm", ptm)) < 0) {
-        kerror("Failed to register ptm: %s", status_str(e));
+        printk("Failed to register ptm: %s", status_str(e));
         return e;
     }
     return 0;

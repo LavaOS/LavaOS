@@ -1,4 +1,5 @@
 #include "charqueue.h"
+#include "printk.h"
 #include "assert.h"
 #include "log.h"
 #include "kernel.h"
@@ -28,6 +29,6 @@ CharQueue* charqueue_new(uint32_t* addr, size_t mask) {
 
 void init_charqueue() {
     if(!(kernel.charqueue_cache=create_new_cache(sizeof(CharQueue), "CharQueue"))) {
-        kerror("Failed to allocate CharQueue cache");
+        printk("Failed to allocate CharQueue cache");
     }
 }

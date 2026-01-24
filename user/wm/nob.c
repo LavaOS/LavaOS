@@ -25,7 +25,7 @@ bool build_main(Nob_String_Builder* sbuf, Nob_File_Paths* path_buf, Nob_Cmd* cmd
     if(!nob_c_needs_rebuild(sbuf, path_buf, BUILD_DIR EXE, sources, sources_count)) return true;
     c_compiler(cmd);
     c_flags(cmd);
-    nob_cmd_append(cmd, "-Werror");
+    // nob_cmd_append(cmd, "-Werror");
     nob_cmd_append(cmd, "-O2");
     nob_cmd_append(cmd, BUILD_DIR "stb_image.o");
     nob_cmd_append(cmd, "-L" MINOS_ROOT "bin/libwm");

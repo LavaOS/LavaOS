@@ -5,6 +5,7 @@
 #include "kernel.h"
 #include "iomem.h"
 #include "apic.h"
+#include "printk.h"
 
 typedef struct {
     RSDP* rsdp;
@@ -15,7 +16,7 @@ ACPISDTHeader* sdt_map_and_find(paddr_t phys, const char* signature) {
     if(!phys) return NULL;
     ACPISDTHeader* h;
     if(!(h=iomap_bytes(phys, sizeof(ACPISDTHeader), KERNEL_PFLAG_PRESENT | KERNEL_PFLAG_WRITE))) {
-        kerror("(sdt_map_and_find) Failed to map acpi header");
+        printk("(sdt_map_and_find) Failed to map acpi header");
         return NULL;
     }
     if(memcmp(h->signature, signature, 4) != 0) {
@@ -25,7 +26,7 @@ ACPISDTHeader* sdt_map_and_find(paddr_t phys, const char* signature) {
     size_t length = h->length;
     iounmap_bytes(h, sizeof(ACPISDTHeader));
     if(!(h=iomap_bytes(phys, length, KERNEL_PFLAG_PRESENT | KERNEL_PFLAG_WRITE))) {
-        kerror("(sdt_map_and_find) Failed to remap acpi header");
+        printk("(sdt_map_and_find) Failed to remap acpi header");
         return NULL;
     }
     return h;
@@ -67,13 +68,13 @@ void init_acpi_isdt(paddr_t phys) {
     }
     ACPISDTHeader* h;
     if(!(h=iomap_bytes(phys, sizeof(ACPISDTHeader), KERNEL_PFLAG_PRESENT | KERNEL_PFLAG_WRITE))) {
-        kerror("Failed to mmap acpi header");
+        printk("Failed to mmap acpi header");
         return;
     }
     size_t length = h->length;
     iounmap_bytes(h, sizeof(ACPISDTHeader));
     if(!(h=iomap_bytes(phys, length, KERNEL_PFLAG_PRESENT | KERNEL_PFLAG_WRITE))) {
-        kerror("Failed to mmap acpi header (2)");
+        printk("Failed to mmap acpi header (2)");
         return;
     }
     uint8_t checksum = count_checksum((uint8_t*)h, length);
@@ -124,7 +125,7 @@ void init_xsdp(XSDP* xsdp) {
     kinfo("xsdt_addr: %p", (void*)xsdp->xsdt_address);
     XSDT* xsdt;
     if(!(xsdt=iomap_bytes(xsdp->xsdt_address, sizeof(XSDT), KERNEL_PFLAG_PRESENT | KERNEL_PFLAG_WRITE))) {
-        kerror("Not enough memory for xsdt");
+        printk("Not enough memory for xsdt");
         return;
     }
     acpi.sdt = xsdt;
@@ -132,7 +133,7 @@ void init_xsdp(XSDP* xsdp) {
     kinfo("length=%zu", length_xsdt);
     iounmap_bytes(xsdt, sizeof(XSDT));
     if(!(xsdt=iomap_bytes(xsdp->xsdt_address, length_xsdt, KERNEL_PFLAG_PRESENT | KERNEL_PFLAG_WRITE))) {
-        kerror("Not enough memory for xsdt (2)");
+        printk("Not enough memory for xsdt (2)");
         return;
     }
     init_xsdt(xsdt);
@@ -144,14 +145,14 @@ void init_rsdp(RSDP* rsdp) {
     kinfo("rsdt: %p", (void*)(uintptr_t)rsdp->rsdt_address); 
     RSDT* rsdt;
     if(!(rsdt=iomap_bytes(rsdp->rsdt_address, sizeof(RSDT), KERNEL_PFLAG_PRESENT | KERNEL_PFLAG_WRITE))) {
-        kerror("Not enough memory for rsdt");
+        printk("Not enough memory for rsdt");
         return;
     }
     size_t length_rsdt = rsdt->header.length;
     kinfo("length=%zu", length_rsdt);
     iounmap_bytes(rsdt, sizeof(RSDT));
     if(!(rsdt=iomap_bytes(rsdp->rsdt_address, length_rsdt, KERNEL_PFLAG_PRESENT | KERNEL_PFLAG_WRITE))) {
-        kerror("Not enough memory for rsdt (2)");
+        printk("Not enough memory for rsdt (2)");
         return;
     }
     acpi.sdt = rsdt;
@@ -166,7 +167,7 @@ void init_acpi() {
                          // NOTE: We map it as XSDP because I'm too lazy to map and unmap for XSDP
     RSDP* rsdp = iomap_bytes(rsdp_phys, sizeof(XSDP), KERNEL_PFLAG_WRITE | KERNEL_PFLAG_PRESENT);
     if(!rsdp) {
-        kerror("Not enough memory for rsdp");
+        printk("Not enough memory for rsdp");
         return;
     }
     {

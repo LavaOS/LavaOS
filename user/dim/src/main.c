@@ -10,7 +10,8 @@
 
 #define STUI_NO_UNICODE
 #define STUI_IMPLEMENTATION
-#include "stui.h"
+
+#include <stui.h>
 
 #if defined(__ANDROID__) || defined(_WIN32) || defined(_MINOS)
 # define DISABLE_ALT_BUFFER 1

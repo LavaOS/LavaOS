@@ -1,4 +1,5 @@
 #include "exec.h"
+#include "printk.h"
 #include "elf.h"
 #include "memory.h"
 #include "page.h"
@@ -176,7 +177,7 @@ static intptr_t load_elf(Task* task, Inode* file, uintptr_t offset, Elf64Header*
         } break;
         case ELF_PHEADER_INTERP: {
             if(pheader->filesize > sizeof(interp_buffer)-1) {
-                kerror("Interpreter header overflows buffer");
+                printk("Interpreter header overflows buffer");
                 return -BUFFER_TOO_SMALL;
             }
             if((e=read_exact(file, interp_buffer, pheader->filesize, pheader->offset)) < 0) return e;
@@ -185,7 +186,7 @@ static intptr_t load_elf(Task* task, Inode* file, uintptr_t offset, Elf64Header*
         }
     }
     if(is_interp && interp) {
-        kerror("Interpreter has its own interpreter? We don't allow that :(");
+        printk("Interpreter has its own interpreter? We don't allow that :(");
         return -RECURSIVE_ELF_INTERP;
     }
     if(interp) {

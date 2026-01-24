@@ -1,6 +1,6 @@
-#include <stdint.h>
-#include <sys/io.h>
+#include <minos/syscall.h>
+#include <minos/syscodes.h>
 
 int main() {
-    outw(0xF4, 0x0000);
+    syscall0(SYS_SHUTDOWN);
 }

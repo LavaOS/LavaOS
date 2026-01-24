@@ -1,4 +1,5 @@
 #include "ps2.h"
+#include "../../printk.h"
 #include <devices/multiplexer.h>
 #include "keyboard/keyboard.h"
 #include "mouse/mouse.h"
@@ -41,7 +42,7 @@ void ps2_handle_resend(void) {
         outb(PS2_DATA_PORT, ps2_cmd_queue.addr[ps2_cmd_queue.tail].data);
         break;
     default:
-        kerror("ps2_handle_resend> other %02X cmd=%02X", ps2_cmd_queue.addr[ps2_cmd_queue.tail].state, ps2_cmd_queue.addr[ps2_cmd_queue.tail].cmd);
+        printk("ps2_handle_resend> other %02X cmd=%02X", ps2_cmd_queue.addr[ps2_cmd_queue.tail].state, ps2_cmd_queue.addr[ps2_cmd_queue.tail].cmd);
     }
 }
 void ps2_handle_ack(void) {
@@ -63,7 +64,7 @@ void ps2_handle_ack(void) {
             outb(PS2_DATA_PORT, ps2_cmd_queue.addr[ps2_cmd_queue.tail].cmd);
         }
     default:
-        kerror("ps2_handle_ack> other %02X", ps2_cmd_queue.addr[ps2_cmd_queue.tail].state);
+        printk("ps2_handle_ack> other %02X", ps2_cmd_queue.addr[ps2_cmd_queue.tail].state);
     }
 }
 intptr_t ps2_wait_write(void) {
@@ -108,15 +109,15 @@ void init_ps2() {
     intptr_t e = 0;
     while(ps2_read_u8() >= 0);
     if((e = init_ps2_mouse()) < 0) {
-        kerror("Failed to initialise PS2 mouse: %s", status_str(e));
+        printk("Failed to initialise PS2 mouse: %s", status_str(e));
     }
     init_ps2_keyboard();
     if((e = vfs_register_device("ps2keyboard", ps2_keyboard_device)) < 0) {
-        kerror("Could not register ps2keyboard device: %s", status_str(e));
+        printk("Could not register ps2keyboard device: %s", status_str(e));
     }
     multiplexer_add(&keyboard_mp, ps2_keyboard_device);
     if((e = vfs_register_device("ps2mouse", ps2_mouse_device)) < 0) {
-        kerror("Could not register ps2mouse device: %s", status_str(e));
+        printk("Could not register ps2mouse device: %s", status_str(e));
     }
     multiplexer_add(&mouse_mp, ps2_mouse_device);
 }

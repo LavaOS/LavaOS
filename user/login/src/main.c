@@ -84,11 +84,10 @@ int main(void) {
 
             setenv("USER", username, 2);
 
-            const char* path = "/user/wm";
+            const char* path = "/sbin/lash";
             char* const argv[] = { (char*)path, NULL };
 
             execve(path, argv, environ);
-            setenv("AFTERLOGIN", path, 3);
 
             write(STDOUT_FILENO,
                   "login: failed to start shell\n",

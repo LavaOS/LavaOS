@@ -1,4 +1,5 @@
 #include "chr.h"
+#include "../../printk.h"
 #include "../../log.h"
 static uint32_t chrtty_getchar(Tty* device) {
     intptr_t e;
@@ -6,7 +7,7 @@ static uint32_t chrtty_getchar(Tty* device) {
     char code;
     for(;;) {
         if((e=inode_read(inode, &code, sizeof(char), 0)) < 0) {
-            kerror("(chrtty:%p %lu) Failed to read on character device: %s", device, inode->id, status_str(e));
+            printk("(chrtty:%p %lu) Failed to read on character device: %s", device, inode->id, status_str(e));
             return 0;
         } else if (e > 0) break;
     }
@@ -16,7 +17,7 @@ static void chrtty_putchar(Tty* device, uint32_t code) {
     intptr_t e;
     Inode* inode = device->priv;
     if((e=inode_write(inode, &code, sizeof(char), 0)) < 0) {
-        kerror("(chrtty:%p %lu) Failed to write on character device: %s", device, inode->id, status_str(e));
+        printk("(chrtty:%p %lu) Failed to write on character device: %s", device, inode->id, status_str(e));
         return;
     }
 }

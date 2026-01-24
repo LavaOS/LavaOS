@@ -31,5 +31,10 @@ int main(int argc, const char** argv) {
     }
 
     printf("\n");
+    free(argc);
+    free(argv);
+    free(arg);
+    free(exe);
+    free(first);
     return 0;
 }

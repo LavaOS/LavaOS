@@ -50,6 +50,7 @@
 
 #include "delay.h"
 #include "rtc.h"
+#include "fblogger.h"
 
 void spawn_init(void) {
     intptr_t e = 0;
@@ -69,7 +70,6 @@ void _start() {
     BREAKPOINT();
 
     printk("Welcome to LavaOS!\n\n");
-    delay(3);
 
     printk("[WAIT] Initilazing serial...\n");
     serial_init();
@@ -81,6 +81,9 @@ void _start() {
     printk("[ OK ] Initilazed cmdline.\n");
     printk("[WAIT] Initilazing loggers...\n");
     init_loggers();
+
+    init_fb_logger();
+
     printk("[ OK ] Initilazed loggers.\n");
     printk("[WAIT] Initilazing GDT and IDT...\n");
     init_gdt();

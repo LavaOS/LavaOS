@@ -1,4 +1,5 @@
 #include "rootfs.h"
+#include "printk.h"
 #include "fs/ustar/ustar.h"
 #include "log.h"
 #include "bootutils.h"
@@ -17,18 +18,11 @@ void init_rootfs(void) {
         kpanic("init_rootfs: Could not create %s : %s", path, status_str(e));
 
     const char* initrd = "/initrd";
-    const char* extras = "/extras";
     BootModule module;
     if(find_bootmodule(initrd, &module)) {
         if((e=ustar_unpack("/", module.data, module.size)) < 0) {
-            kerror("Failed to unpack: %s into root: %s", initrd, status_str(e));
+            printk("Failed to unpack: %s into root: %s", initrd, status_str(e));
         }
     }
     else kpanic("Bro you can't boot live iso without initrd :|"); // Initrd not found
-    if(find_bootmodule(extras, &module)) {
-        if((e=ustar_unpack("/", module.data, module.size)) < 0) {
-            kerror("Failed to unpack: %s into root: %s", extras, status_str(e));
-        }
-    }
-    else kwarn("Extras not found.");
 }

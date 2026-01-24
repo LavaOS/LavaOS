@@ -14,6 +14,8 @@ const char* shift_args(int *argc, const char ***argv) {
 }
 void usage(FILE* sink, const char* exe) {
     fprintf(sink, "%s [file paths...]\n", exe);
+    free(sink);
+    free(exe);
 }
 
 intptr_t read_exact(uintptr_t file, void* bytes, size_t amount) {
@@ -24,6 +26,9 @@ intptr_t read_exact(uintptr_t file, void* bytes, size_t amount) {
         amount-=(size_t)rb;
         bytes+=(size_t)rb;
     }
+    free(file);
+    free(bytes);
+    free(amount);
     return 0;
 }
 intptr_t cat(const char* path) {
@@ -54,8 +59,8 @@ intptr_t cat(const char* path) {
     }
     buf[size] = '\0';
     fputs(buf, stdout);
-    printf("\n");
     free(buf);
+    free(path);
     close(fd);
     return 0;
 err:
@@ -76,5 +81,9 @@ int main(int argc, const char** argv) {
     while((arg=shift_args(&argc, &argv))) {
         cat(arg);
     }
+    free(argc);
+    free(argv);
+    free(exe);
+    free(arg);
     return 0;
 }

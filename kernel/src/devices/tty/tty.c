@@ -1,4 +1,5 @@
 #include "tty.h"
+#include "../../printk.h"
 #include <log.h>
 #include <kernel.h>
 #include <cmdline.h>
@@ -98,7 +99,7 @@ static Tty* get_init_tty() {
             const char* end=NULL;
             framebuffer_id = atosz(framebuffer_id_str, &end);
             if(!end || end==framebuffer_id_str) {
-                kerror("tty:fbid is NOT a valid integer. Falling back to default environment");
+                printk("tty:fbid is NOT a valid integer. Falling back to default environment");
                 return default_environ();
             }
         }
@@ -232,13 +233,13 @@ void tty_init(Tty* tty, Cache* cache) {
 void init_tty(void) {
     tty_cache = create_new_cache(sizeof(Tty), "Tty");
     if(!tty_cache) {
-        kerror("Failed to create tty_cache. Not Enough Memory");
+        printk("Failed to create tty_cache. Not Enough Memory");
         return;
     }
     Tty* tty = get_init_tty();
     if(!tty) {
         // FIXME: cache_destory on tty_cache
-        kerror("(tty) Missing initial tty");
+        printk("(tty) Missing initial tty");
         return;
     }
     intptr_t e;
@@ -246,7 +247,7 @@ void init_tty(void) {
         // FIXME: deallocate the device
         // FIXME: deinit the tty
         // FIXME: cache_destory on tty_cache
-        kerror("(tty) Failed to register tty device: %s", status_str(e));
+        printk("(tty) Failed to register tty device: %s", status_str(e));
         return;
     }
 }

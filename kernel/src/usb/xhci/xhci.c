@@ -1,4 +1,5 @@
 #include "xhci.h"
+#include "../../printk.h"
 #include <msi.h>
 #include <iomem.h>
 #include <page.h>
@@ -490,28 +491,28 @@ static void deinit_scratchpad(XhciController* cont) {
 }
 static intptr_t xhci_bound_check(PciDevice* dev, XhciController* cont) {
     if(dev->bar0.size < sizeof(CapabilityRegs)) {
-        kerror("Bar0 too small for capregs");
+        printk("Bar0 too small for capregs");
         return -UNSUPPORTED;
     }
     cont->capregs = dev->bar0.as.mmio.addr;
     if(cont->capregs->caplen < sizeof(CapabilityRegs)) {
-        kerror("Caplen must be at a minimum %zu in size (actual = %zu)", sizeof(CapabilityRegs), cont->capregs->caplen);
+        printk("Caplen must be at a minimum %zu in size (actual = %zu)", sizeof(CapabilityRegs), cont->capregs->caplen);
         return -UNSUPPORTED;
     }
     if(dev->bar0.size < cont->capregs->caplen) {
-        kerror("Bar0 too small for capregs");
+        printk("Bar0 too small for capregs");
         return -UNSUPPORTED;
     }
     if(dev->bar0.size < cont->capregs->caplen + 0xBFF) {
-        kerror("Bar0 too small for capregs + opregs");
+        printk("Bar0 too small for capregs + opregs");
         return -UNSUPPORTED;
     }
     if(dev->bar0.size < cont->capregs->rtsoff + sizeof(RuntimeRegs) + sizeof(ISREntry) * get_max_interrupters(cont->capregs)) {
-        kerror("rtsoff out of bounds");
+        printk("rtsoff out of bounds");
         return -UNSUPPORTED;
     }
     if(dev->bar0.size < cont->capregs->dboff + sizeof(uint32_t)*256) {
-        kerror("dboff out of bounds");
+        printk("dboff out of bounds");
         return -UNSUPPORTED;
     }
     return 0;
@@ -521,7 +522,7 @@ static intptr_t take_ownership(XhciController* cont) {
     if(!ptr) return 0;
     for(;;) {
         if(ptr + sizeof(ExtCapEntry) >= cont->mmio_len) {
-            kerror("Invalid extended capability offset");
+            printk("Invalid extended capability offset");
             return -INVALID_OFFSET;
         }
         volatile ExtCapEntry* cap_entry = (void*)(((uint8_t*)cont->capregs) + ptr);
@@ -530,7 +531,7 @@ static intptr_t take_ownership(XhciController* cont) {
         if (id == EXT_CAP_ID_USB_LEGACY_SUPPORT) {
             volatile USBLegacySupportCap* cap = (volatile USBLegacySupportCap*)cap_entry;
             if(ptr + sizeof(USBLegacySupportCap) >= cont->mmio_len) {
-                kerror("Invalid legacy support capability offset");
+                printk("Invalid legacy support capability offset");
                 return -INVALID_OFFSET;
             }
             if(!usb_legacy_support_get_bios(cap)) {
@@ -554,7 +555,7 @@ static intptr_t enum_ext_cap(XhciController* cont) {
     if(!ptr) return 0;
     for(;;) {
         if(ptr + sizeof(ExtCapEntry) >= cont->mmio_len) {
-            kerror("Invalid extended capability offset");
+            printk("Invalid extended capability offset");
             return -INVALID_OFFSET;
         }
         volatile ExtCapEntry* cap_entry = (void*)(((uint8_t*)cont->capregs) + ptr);
@@ -565,18 +566,18 @@ static intptr_t enum_ext_cap(XhciController* cont) {
         case EXT_CAP_ID_SUPPORT_PROTOCOL: {
             volatile SupportProtCap* cap = (volatile SupportProtCap*)cap_entry;
             if(ptr + sizeof(SupportProtCap) >= cont->mmio_len) {
-                kerror("Invalid supported capability offset");
+                printk("Invalid supported capability offset");
                 return -INVALID_OFFSET;
             }
             uint8_t revision_major = supported_prot_cap_revision_major(cap), revision_minor = supported_prot_cap_revision_minor(cap);
             size_t ports_count = supported_prot_cop_port_count(cap), ports_offset = supported_prot_cop_port_offset(cap);
             if(ports_count <= 0 || ports_offset <= 0) {
-                kerror("Invalid values for count = %zu offset = %zu", ports_count, ports_offset);
+                printk("Invalid values for count = %zu offset = %zu", ports_count, ports_offset);
                 return -INVALID_OFFSET;
             }
             ports_offset--;
             if(ports_offset + ports_count > cont->ports_count) {
-                kerror("Out of range");
+                printk("Out of range");
                 return -INVALID_OFFSET;
             }
             char name[10] = {0};
@@ -598,17 +599,17 @@ intptr_t init_xhci(PciDevice* dev) {
     intptr_t e;
     kinfo("BAR:");
     if(!dev->bar0.mmio) {
-        kerror("usb xHCI may not be non-mmio");
+        printk("usb xHCI may not be non-mmio");
         return -INVALID_TYPE;
     }
     pci_device_enum_caps(dev);
     if(!dev->msi_offset && !dev->msi_x_offset) {
-        kerror("usb xHCI doesn't support MSI(-X)");
+        printk("usb xHCI doesn't support MSI(-X)");
         return -INVALID_TYPE;
     }
     // FIXME: Remove this and add support for MSI-X
     if(!dev->msi_offset) {
-        kerror("usb xHCI driver currently only supports MSI");
+        printk("usb xHCI driver currently only supports MSI");
         return -INVALID_TYPE;
     }
     kinfo("msi_offset=0x%02X", dev->msi_offset);

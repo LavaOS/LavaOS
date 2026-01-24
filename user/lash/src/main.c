@@ -12,6 +12,9 @@
 #include <fcntl.h>
 #include <errno.h>
 
+bool fatal_error = false;
+int exit_code = 0;
+
 intptr_t readline(char* buf, size_t bufmax) {
     intptr_t e;
     size_t n = 0;
@@ -125,7 +128,7 @@ char* strip_arg(Arena* arena, char** str_result) {
     char* at=trim_l(*str_result);
     char* begin=at;
     if(at[0] == '"') {
-        fprintf(stderr, "ERROR: Parsing quoted arguments is not yet supported");
+        fprintf(stderr, "ERROR: PARSING QUOTED ARGUMENTS IS NOT YET SUPPORTED");
         exit(1);
     }
     while(*at) {
@@ -148,12 +151,14 @@ typedef struct {
 intptr_t spawn_cmd(Cmd* cmd, char** argv) {
     int e = fork();
     if(e == 0) {
-        e = execvp(argv[0], argv);
-        exit(EXEC_STATUS_OFF + (-e));
+        execvp(argv[0], argv);
+        exit(EXEC_STATUS_OFF + errno);
     } else if (e >= 0) {
         cmd->pid = e;
-    } else return e;
-    return 0;
+        return 0;
+    } else {
+        return -errno;
+    }
 }
 intptr_t wait_cmd(Cmd* cmd) {
     intptr_t e = wait_pid(cmd->pid);
@@ -164,15 +169,21 @@ intptr_t wait_cmd(Cmd* cmd) {
 void run_cmd(char** argv) {
     Cmd cmd = { 0 };
     intptr_t e;
+    /* if ((e = spawn_cmd(&cmd, argv)) < 0) {
+        fprintf(stderr, "ERROR: FORK %s\n", status_str(e));
+        return;
+    } */
     if((e=spawn_cmd(&cmd, argv)) < 0) {
-        fprintf(stderr, "ERROR: fork %s\n", status_str(e));
-        exit(1);
-    }
-    if((e=wait_cmd(&cmd)) < 0) {
-        fprintf(stderr, "ERROR: Failed to run %s: %s\n", argv[0], status_str(e));
+        fprintf(stderr, "ERROR: FORK %s\n", status_str(e));
+        exit_code = 1;
+        fatal_error = true;
         return;
     }
-    if(e != 0) printf("%s exited with: %d\n", argv[0], (int)e);
+    if((e=wait_cmd(&cmd)) < 0) {
+        fprintf(stderr, "BAD COMMAND!\n", argv[0], status_str(e));
+        return;
+    }
+    if(e != 0) printf("%s CLOSED WITH CODE %d\n", argv[0], (int)e);
 }
 int main() {
     Arena arena={0};
@@ -181,8 +192,9 @@ int main() {
     assert(MAX_ARGS > 0);
     char** args = malloc(MAX_ARGS*sizeof(*args));
     char* cwd = malloc(PATH_MAX);
+
     if(getcwd(cwd, PATH_MAX) == NULL) {
-        fprintf(stderr, "ERROR: Failed to getcwd on initial getcwd: %s\n", strerror(errno));
+        fprintf(stderr, "ERROR: FAILED TO GETCWD ON INITIAL GETCWD: %s\n", strerror(errno));
         free(args);
         free(cwd);
         free(linebuf);
@@ -190,24 +202,36 @@ int main() {
     }
     size_t arg_count=0;
     bool running = true;
-    int exit_code = 0;
+
+    printf("Welcome to LASH! LAvaos SHell.\n");
 
     while(running) {
-        const char* h = getenv("HOSTNAME");
-        const char* u = getenv("USER");
+        // const char* h = getenv("HOSTNAME");
+        // const char* u = getenv("USER");
 
-        printf(u);
-        printf(" | ");
-        printf(h);
-        printf(" %s >> ", cwd);
+        printf("\033[36m");
+        printf("%s ", cwd);
+        printf("\033[0m");
+        printf("LASH-1.0");
+        printf(">");
 
         arena_reset(&arena);
         arg_count=0;
         fflush(stdout);
-        if((e=readline(linebuf, LINEBUF_MAX-1)) < 0) {
-            printf("Failed to read on stdin: %s\n", status_str(e));
+        /* if((e=readline(linebuf, LINEBUF_MAX-1)) < 0) {
+            printf("FAILED TO READ ON STDIN: %s\n", status_str(e));
             return 1;
+        } */
+        if((e=readline(linebuf, LINEBUF_MAX-1)) < 0) {
+            fprintf(stderr, "FAILED TO READ ON STDIN: %s\n", status_str(e));
+            exit_code = 1;
+            fatal_error = true;
+            break;
         }
+
+        if (fatal_error)
+            break;
+
         linebuf[e] = 0;
         char* line = trim_r(linebuf);
         // Empty
@@ -216,7 +240,7 @@ int main() {
         args[arg_count++] = cmd;
         while((line=trim_l(line))[0]) {
             if(arg_count == MAX_ARGS) {
-                printf("Forbidden: Maximum argument count reached\n");
+                printf("TOO MANY ARGUMENTS\n");
                 continue;
             }
             char* arg = strip_arg(&arena, &line);
@@ -229,33 +253,32 @@ int main() {
                 char* end;
                 exit_code = strtoll(args[1], &end, 10);
                 if(end[0] != '\0') {
-                    fprintf(stderr, "Invalid exit code `%s`\n", args[1]);
+                    fprintf(stderr, "INVALID EXIT CODE `%s`\n", args[1]);
                     exit_code = 1;
                     continue;
                 }
             } else {
-                fprintf(stderr, "Too many arguments provided to `exit`\n");
+                fprintf(stderr, "EXIT: TOO MANY ARGUMENTS\n");
                 continue;
             }
         } else if (strcmp(cmd, "reset") == 0) {
             tty_set_flags(fileno(stdin), TTY_ECHO);
         } else if (strcmp(cmd, "cd") == 0) {
-            if (arg_count < 2) {
-                fprintf(stderr, "Expected path after cd\n");
+            const char* path = (arg_count < 2) ? "/" : args[1];
+
+            if (arg_count > 2) {
+                fprintf(stderr, "CD: TOO MANY ARGUMENTS\n");
                 continue;
             }
-            else if (arg_count > 2) {
-                fprintf(stderr, "Too many arguments after cd\n");
+
+            if((e = chdir(path)) < 0) {
+                fprintf(stderr, "FAILED TO CD INTO `%s`: %s\n", path, status_str(e));
                 continue;
             }
-            const char* path = args[1];
-            if((e=chdir(path)) < 0) {
-                fprintf(stderr, "Failed to cd into `%s`: %s\n", path, status_str(e));
-                continue;
-            }
+
             if(getcwd(cwd, PATH_MAX) == NULL) {
-                fprintf(stderr, "Failed to get cwd: %s\n", status_str(e));
-                exit(1); 
+                fprintf(stderr, "FAILED TO GETCWD: %s\n", strerror(errno));
+                exit(1);
             }
         } else {
             args[arg_count++] = NULL;
@@ -264,5 +287,7 @@ int main() {
     }
     arena_drop(&arena);
     free(args);
+    free(cwd);
+    free(linebuf);
     return exit_code;
 }

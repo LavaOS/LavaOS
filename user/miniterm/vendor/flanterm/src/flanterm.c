@@ -1280,7 +1280,6 @@ unicode_error:
 
     size_t x, y;
     ctx->get_cursor_pos(ctx, &x, &y);
-
     switch (c) {
         case 0x00:
         case 0x7f:

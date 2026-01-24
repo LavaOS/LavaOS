@@ -1,4 +1,5 @@
 #include "exception.h"
+#include "../../printk.h"
 #include "kernel.h"
 #include "log.h"
 #include "task.h"
@@ -56,21 +57,21 @@ enum {
 void exception_handler(ExceptionFrame* frame, uint64_t cr2) {
     mutex_lock(&err);
     if(frame->irq == EXCEPTION_PAGE_FAULT) {
-        kerror("Page fault at virtual address %p",(void*)cr2);
+        printk("Page fault at virtual address %p",(void*)cr2);
     }
     if(frame->irq == EXCEPTION_GPF) {
-        kerror("General protection fault");
+        printk("General protection fault");
         if(frame->code) {
-            kerror("- External = %s", (frame->code >> 0) & 0b1 ? "true" : "false");
-            kerror("- Table    = %s", gpf_table[(frame->code >> 1) & 0b11]);
-            kerror("- Index    = 0x%02X", (uint16_t)frame->code >> 3);
+            printk("- External = %s", (frame->code >> 0) & 0b1 ? "true" : "false");
+            printk("- Table    = %s", gpf_table[(frame->code >> 1) & 0b11]);
+            printk("- Index    = 0x%02X", (uint16_t)frame->code >> 3);
         }
     }
     kinfo ("cr2=%p    type=%p    rip=%p    cs =%p    flags=%p    rsp=%p    ss =%p", (void*)cr2, (void*)frame->irq, (void*)frame->rip, (void*)frame->cs , (void*)frame->rflags, (void*)frame->rsp, (void*)frame->ss );
     kinfo ("r15=%p    r14 =%p    r13=%p    r12=%p    r11  =%p    r10=%p    r9 =%p", (void*)frame->r15, (void*)frame->r14 , (void*)frame->r13, (void*)frame->r12, (void*)frame->r11  , (void*)frame->r10, (void*)frame->r9 );
     kinfo ("r8 =%p    rbp =%p    rdi=%p    rsi=%p    rdx  =%p    rcx=%p    rbx=%p", (void*)frame->r8 , (void*)frame->rbp , (void*)frame->rdi, (void*)frame->rsi, (void*)frame->rdx  , (void*)frame->rcx, (void*)frame->rbx);
     kinfo ("rax=%p\n"                                                               , (void*)frame->rax);
-    kerror("Gotten exception (%zu) with code %zu at rip: %p at virtual: %p",frame->irq, (size_t)frame->code,(void*)frame->rip,(void*)cr2);
+    printk("Gotten exception (%zu) with code %zu at rip: %p at virtual: %p",frame->irq, (size_t)frame->code,(void*)frame->rip,(void*)cr2);
     Task* task  = current_task();
 
     if(task) {

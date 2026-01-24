@@ -8,10 +8,11 @@
 #include <stdlib.h>
 
 void _start(int argc, const char** argv, const char** envp) {
-    intptr_t e;
-    if((e = open("/devices/tty0", O_RDWR)) < 0) {
-        exit(-e); 
-    }
+    const char* std = "/devices/tty0";
+    if(open(std, O_WRONLY) < 0 ||   /*STDOUT*/
+       open(std, O_RDONLY) < 0 ||   /*STDIN*/
+       open(std, O_WRONLY) < 0      /*STDERR*/
+    ) exit(1); 
     _libc_init_environ(envp);
     _libc_init_streams();
     fprintf(stderr, "\033[2J\033[H");
@@ -38,7 +39,7 @@ int main() {
     fflush(stdout);
 
     intptr_t pid = fork();
-    if (pid == (-YOU_ARE_CHILD)) {
+    if (pid == 0) {
         execve(path, (char*const*)argv, (char*const*)environ);
         printf("init: exec failed\n");
         exit(1);

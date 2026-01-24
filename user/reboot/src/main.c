@@ -1,7 +1,6 @@
-#include <stdint.h>
-#include <sys/io.h>
+#include <minos/syscall.h>
+#include <minos/syscodes.h>
 
 int main() {
-    outb(0x64, 0xFE);
-    return 0;
+    syscall0(SYS_REBOOT);
 }

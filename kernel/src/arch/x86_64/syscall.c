@@ -1,3 +1,5 @@
+#include "../../port.h"
+
 #include "syscall.h"
 #include "print.h"
 #include "timer.h"
@@ -73,6 +75,7 @@ intptr_t sys_write(uintptr_t handle, const void* buf, size_t size) {
     Resource* res = resource_find_by_id(current->resources, handle);
     if(!res) return -INVALID_HANDLE;
     if(!(res->flags & O_WRONLY)) return -PERMISION_DENIED;
+    if(!(res->flags & O_NONBLOCK) && !inode_is_writeable(res->inode)) block_is_writeable(current_task(), res->inode);
     intptr_t e;
     if((e=inode_write(res->inode, buf, size, res->offset)) < 0) return e;
     res->offset += e;
@@ -101,11 +104,10 @@ intptr_t sys_read(uintptr_t handle, void* buf, size_t size) {
     Resource* res = resource_find_by_id(current->resources, handle);
     if(!res) return -INVALID_HANDLE;
     if(!(res->flags & O_RDONLY)) return -PERMISION_DENIED;
-    intptr_t e;
 
     if(!(res->flags & O_NONBLOCK) && !inode_is_readable(res->inode)) block_is_readable(current_task(), res->inode);
-    if((e=inode_read(res->inode, buf, size, res->offset)) < 0) return e;
-    res->offset += e;
+    intptr_t e = inode_read(res->inode, buf, size, res->offset);
+    if(e >= 0) res->offset += e;
     return e;
 }
 
@@ -564,7 +566,7 @@ intptr_t sys_socket(uint32_t domain, uint32_t type, uint32_t prototype) {
         return -NOT_ENOUGH_MEM;
     }
     res->inode->type = STX_TYPE_MINOS_SOCKET;
-    res->flags = O_RDWR;
+    res->flags = O_RDONLY | O_WRONLY;
     intptr_t e = family->init(res->inode);
     if(e < 0) {
         idrop(res->inode);
@@ -572,23 +574,6 @@ intptr_t sys_socket(uint32_t domain, uint32_t type, uint32_t prototype) {
         return e;
     }
     return id;
-}
-// TODO: Completely remove these:
-// TODO: strace
-intptr_t sys_send(uintptr_t sockfd, const void *buf, size_t len) {
-    Process* current = current_process();
-    Resource* res = resource_find_by_id(current->resources, sockfd);
-    if(!res) return -INVALID_HANDLE;
-    if(!(res->flags & O_NONBLOCK) && !inode_is_writeable(res->inode)) block_is_writeable(current_task(), res->inode);
-    return inode_write(res->inode, buf, len, res->offset);
-}
-// TODO: strace
-intptr_t sys_recv(uintptr_t sockfd,       void *buf, size_t len) {
-    Process* current = current_process();
-    Resource* res = resource_find_by_id(current->resources, sockfd);
-    if(!res) return -INVALID_HANDLE;
-    if(!(res->flags & O_NONBLOCK)) block_is_readable(current_task(), res->inode);
-    return inode_read(res->inode, buf, len, res->offset);
 }
 
 // TODO: strace
@@ -601,13 +586,13 @@ intptr_t sys_accept(uintptr_t sockfd, struct sockaddr* addr, size_t *addrlen) {
     Resource* result = resource_add(current->resources, &id);
     if(!result) return -NOT_ENOUGH_MEM;
     result->inode = new_inode();
+    result->flags = O_RDONLY | O_WRONLY;
     if(!result->inode) {
         resource_remove(current->resources, id);
         return -NOT_ENOUGH_MEM;
     }
-    intptr_t e;
     if(!(res->flags & O_NONBLOCK)) block_is_readable(current_task(), res->inode);
-    e = inode_accept(res->inode, result->inode, addr, addrlen);
+    intptr_t e = inode_accept(res->inode, result->inode, addr, addrlen);
     if(e < 0) {
         idrop(result->inode);
         resource_remove(current->resources, id);
@@ -737,10 +722,11 @@ intptr_t sys_shmrem(size_t key) {
     mutex_unlock(&kernel.shared_memory_mutex);
     return 0;
 }
+char _kernel_name[] = "LavaOS";
 intptr_t sys_sysctl(uint32_t op, void* arg) {
     switch(op) {
     case SYSCTL_KERNEL_NAME:
-        memcpy(arg, "LavaOS", 6);
+        memcpy(arg, _kernel_name, sizeof(_kernel_name)-1);
         break;
     case SYSCTL_MEMINFO: {
         SysctlMeminfo* mem_info = arg;
@@ -750,5 +736,13 @@ intptr_t sys_sysctl(uint32_t op, void* arg) {
     default:
         return -UNSUPPORTED;
     }
+    return 0;
+}
+intptr_t sys_shutdown() {
+    outw(0xF4, 0x0000);
+    return 0;
+}
+intptr_t sys_reboot() {
+    outb(0x64, 0xFE);
     return 0;
 }

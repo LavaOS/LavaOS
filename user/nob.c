@@ -5,6 +5,7 @@
 
 const char* projects[] = {
     "librtc",
+    "libstui",
     "time",
     "dim",
     "true",
@@ -12,6 +13,7 @@ const char* projects[] = {
     "clear",
     "libwm",
     "libpluto",
+    "lash",
     "MinSDL",
     "cat",
     "dynld",
@@ -28,9 +30,9 @@ const char* projects[] = {
     "math",
     "mimux",
     "reboot",
-    "shell",
     "simpdump",
     "shutdown",
+    "session",
     "yes",
     "wm",
     "whoami",
