@@ -84,7 +84,7 @@ int main(void) {
 
             setenv("USER", username, 2);
 
-            const char* path = "/sbin/lash";
+            const char* path = "/user/wm";
             char* const argv[] = { (char*)path, NULL };
 
             execve(path, argv, environ);
