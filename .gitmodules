@@ -4,3 +4,6 @@
 [submodule "user/doomgeneric"]
 	path = user/doomgeneric
 	url = https://github.com/Dcraftbg/doomgeneric.git
+[submodule "user/lash"]
+	path = user/lash
+	url = https://github.com/LavaOS/lash
