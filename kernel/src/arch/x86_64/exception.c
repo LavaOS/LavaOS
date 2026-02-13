@@ -57,25 +57,25 @@ enum {
 void exception_handler(ExceptionFrame* frame, uint64_t cr2) {
     mutex_lock(&err);
     if(frame->irq == EXCEPTION_PAGE_FAULT) {
-        printk("Page fault at virtual address %p",(void*)cr2);
+        printk("Page fault at virtual address %p\n",(void*)cr2);
     }
     if(frame->irq == EXCEPTION_GPF) {
-        printk("General protection fault");
+        printk("General protection fault\n");
         if(frame->code) {
-            printk("- External = %s", (frame->code >> 0) & 0b1 ? "true" : "false");
-            printk("- Table    = %s", gpf_table[(frame->code >> 1) & 0b11]);
-            printk("- Index    = 0x%02X", (uint16_t)frame->code >> 3);
+            printk("- External = %s\n", (frame->code >> 0) & 0b1 ? "true" : "false");
+            printk("- Table    = %s\n", gpf_table[(frame->code >> 1) & 0b11]);
+            printk("- Index    = 0x%02X\n", (uint16_t)frame->code >> 3);
         }
     }
-    kinfo ("cr2=%p    type=%p    rip=%p    cs =%p    flags=%p    rsp=%p    ss =%p", (void*)cr2, (void*)frame->irq, (void*)frame->rip, (void*)frame->cs , (void*)frame->rflags, (void*)frame->rsp, (void*)frame->ss );
-    kinfo ("r15=%p    r14 =%p    r13=%p    r12=%p    r11  =%p    r10=%p    r9 =%p", (void*)frame->r15, (void*)frame->r14 , (void*)frame->r13, (void*)frame->r12, (void*)frame->r11  , (void*)frame->r10, (void*)frame->r9 );
-    kinfo ("r8 =%p    rbp =%p    rdi=%p    rsi=%p    rdx  =%p    rcx=%p    rbx=%p", (void*)frame->r8 , (void*)frame->rbp , (void*)frame->rdi, (void*)frame->rsi, (void*)frame->rdx  , (void*)frame->rcx, (void*)frame->rbx);
-    kinfo ("rax=%p\n"                                                               , (void*)frame->rax);
-    printk("Gotten exception (%zu) with code %zu at rip: %p at virtual: %p",frame->irq, (size_t)frame->code,(void*)frame->rip,(void*)cr2);
+    printk("cr2=%p    type=%p    rip=%p    cs =%p    flags=%p    rsp=%p    ss =%p", (void*)cr2, (void*)frame->irq, (void*)frame->rip, (void*)frame->cs , (void*)frame->rflags, (void*)frame->rsp, (void*)frame->ss );
+    printk("r15=%p    r14 =%p    r13=%p    r12=%p    r11  =%p    r10=%p    r9 =%p", (void*)frame->r15, (void*)frame->r14 , (void*)frame->r13, (void*)frame->r12, (void*)frame->r11  , (void*)frame->r10, (void*)frame->r9 );
+    printk("r8 =%p    rbp =%p    rdi=%p    rsi=%p    rdx  =%p    rcx=%p    rbx=%p", (void*)frame->r8 , (void*)frame->rbp , (void*)frame->rdi, (void*)frame->rsi, (void*)frame->rdx  , (void*)frame->rcx, (void*)frame->rbx);
+    printk("rax=%p\n"                                                             , (void*)frame->rax);
+    printk("Gotten exception (%zu) with code %zu at rip: %p at virtual: %p\n",frame->irq, (size_t)frame->code,(void*)frame->rip,(void*)cr2);
     Task* task  = current_task();
 
     if(task) {
-        kinfo("Task that caused this: %s", task->name);
+        printk("Task that caused this: %s\n", task->name);
     }
 #if 1
     if(task && frame->irq == EXCEPTION_PAGE_FAULT) {
@@ -84,7 +84,7 @@ void exception_handler(ExceptionFrame* frame, uint64_t cr2) {
             MemoryList* list = (MemoryList*)head;
             MemoryRegion* region = list->region;
             uintptr_t end = region->address + region->pages * PAGE_SIZE;
-            kinfo(" %p -> %p (%zu pages)", region->address, end, region->pages);
+            printk(" %p -> %p (%zu pages)\n", region->address, end, region->pages);
             if(cr2 >= region->address && cr2 < end) {
                 kwarn("Inside this region!");
             }
