@@ -4,8 +4,7 @@
 #include "printk.h"
 #include <stdarg.h>
 
-void kpanic(const char* fmt, ...)
-{
+void kpanic(const char* fmt, ...) {
     va_list args;
 
     va_start(args, fmt);

@@ -24,6 +24,13 @@ Nightly branch: https://mega.nz/folder/WAVDzAAR#0A-jnREK9e3MMW2p7oHgDA
 **LavaOS** is a free and open-source Unix-like operating system, forked from [MinOS](https://github.com/Dcraftbg/MinOS).  
 It aims to be minimalist, hackable, and blazing fast — powered by a custom bootstrapping compiler (`nob.c`) and a raw, low-level design.
 
+## Screenshots
+![cat](cat.png)
+![desktop](desktop.png)
+![dim](dim.png)
+![doomgeneric](doomgeneric.png)
+![login](login.png)
+
 ## 🚀 Features
 
 - 🔥 Forked from MinOS with key improvements
@@ -36,6 +43,8 @@ It aims to be minimalist, hackable, and blazing fast — powered by a custom boo
 ---
 
 ## 🔧 Getting Started
+
+Highly recommended distro for build: archlinux
 
 ### 💾 Clone the source
 
@@ -56,8 +65,8 @@ gcc nob.c -o nob
 ## ⚠️ Heads Up
 
 The first run will compile a full custom GCC toolchain inside your environment.
-Make sure you have enough RAM + swap (recommendation: at least 4GB RAM + 8GB swap) to avoid out-of-memory errors.
-Building may temporarily consume 10–60 GB of space depending on your setup.
+Make sure you have enough RAM + swap (recommendation: at least 4GiB RAM + 8GiB swap) to avoid out-of-memory errors.
+Building may temporarily consume 1–10 GiB of space depending on your setup.
 
 ## 🤝 Contributing
 
