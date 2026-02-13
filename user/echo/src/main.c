@@ -1,40 +1,16 @@
 #include <minos/sysstd.h>
-#include <minos/status.h>
-#include <stdlib.h>
 #include <stdio.h>
-#include <assert.h>
-#include <string.h>
-
-const char* shift_args(int *argc, const char ***argv) {
-    if((*argc) <= 0) return NULL;
-    const char* arg = **argv;
-    (*argc)--;
-    (*argv)++;
-    return arg;
-}
 
 int main(int argc, const char** argv) {
-    const char* arg;
-    const char* exe = shift_args(&argc, &argv);  // Skip program name
-    assert(exe && "Expected exe. Found nothing");
-
-    if (argc == 0) {
+    if (argc < 2) {
         printf("Usage: echo [text]\n");
         return 1;
     }
 
-    int first = 1;
-    while((arg = shift_args(&argc, &argv))) {
-        if (!first) printf(" ");
-        printf("%s", arg);
-        first = 0;
+    for (int i = 1; i < argc; i++) {
+        if (i > 1) printf(" ");
+        printf("%s", argv[i]);
     }
-
     printf("\n");
-    free(argc);
-    free(argv);
-    free(arg);
-    free(exe);
-    free(first);
     return 0;
 }
