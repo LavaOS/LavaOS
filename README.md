@@ -6,7 +6,7 @@
   - [Limine Bootloader](https://github.com/limine-bootloader/limine), licensed under the **BSD 3-Clause License** (see `kernel/vendor/limine/LICENSE`).  
   - [Doomgeneric (Ported by dcraftbg)](https://github.com/Dcraftbg/doomgeneric), licensed under the **GPLv2 License** (see `user/doomgeneric/LICENSE`).
   - [DIM text editor (By dcraftbg)](https://github.com/Dcraftbg/dim), licensed under the **MIT License** (see `licenses/LICENSE.DIM`).
-  - [Sinux Kernel (amirh1385 fork, Original project:https://github.com/CyberSinook/Sinux)](https://github.com/amirh1385/Sinux), licensed under the **MIT License** (see `licenses/LICENSE.SINUX`).
+  - [Sinux Kernel (amirh1385 fork, Original project: https://github.com/CyberSinook/Sinux)](https://github.com/amirh1385/Sinux), licensed under the **MIT License** (see `licenses/LICENSE.SINUX`).
 - All third-party licenses are preserved in this repository as required.
 
 ### ⚠️ Visit our website:
@@ -25,11 +25,11 @@ Nightly branch: https://mega.nz/folder/WAVDzAAR#0A-jnREK9e3MMW2p7oHgDA
 It aims to be minimalist, hackable, and blazing fast — powered by a custom bootstrapping compiler (`nob.c`) and a raw, low-level design.
 
 ## Screenshots
-![cat](cat.png)
-![desktop](desktop.png)
-![dim](dim.png)
-![doomgeneric](doomgeneric.png)
-![login](login.png)
+![cat](screenshots/cat.png)
+![desktop](screenshots/desktop.png)
+![dim](screenshots/dim.png)
+![doomgeneric](screenshots/doomgeneric.png)
+![login](screenshots/login.png)
 
 ## 🚀 Features
 
@@ -49,7 +49,7 @@ Highly recommended distro for build: archlinux
 ### 💾 Clone the source
 
 ```bash
-git clone https://github.com/jrifuoue/LavaOS.git
+git clone https://github.com/LavaOS/LavaOS.git
 cd LavaOS
 ```
 ### 🛠 Build the Compiler (nob)
