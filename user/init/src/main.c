@@ -23,7 +23,7 @@ void _start(int argc, const char** argv, const char** envp) {
         free(STDIN_FILENO);
         close(STDIN_FILENO);
     }
-    free(code);
+    
     exit(code);
 }
 int main() {
