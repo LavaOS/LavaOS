@@ -11,17 +11,20 @@ void _start(int argc, const char** argv, const char** envp) {
     const char* std = "/devices/tty0";
     if(open(std, O_WRONLY) < 0 ||   /*STDOUT*/
        open(std, O_RDONLY) < 0 ||   /*STDIN*/
-       open(std, O_WRONLY) < 0      /*STDERR*/
-    ) exit(1); 
+       open(std, O_WRONLY) < 0) {   /*STDERR*/
+        exit(1); 
+    }
+    
     _libc_init_environ(envp);
     _libc_init_streams();
+    
     fprintf(stderr, "\033[2J\033[H");
+    
     int code = main();
-    free(STDOUT_FILENO);
+
     close(STDOUT_FILENO);
     if(STDIN_FILENO != STDOUT_FILENO) {
         free(STDIN_FILENO);
-        close(STDIN_FILENO);
     }
     
     exit(code);
