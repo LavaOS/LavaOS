@@ -24,7 +24,7 @@ void _start(int argc, const char** argv, const char** envp) {
 
     close(STDOUT_FILENO);
     if(STDIN_FILENO != STDOUT_FILENO) {
-        free(STDIN_FILENO);
+        close(STDIN_FILENO);
     }
     
     exit(code);
