@@ -79,20 +79,16 @@ void stui_window_border(size_t x, size_t y, size_t w, size_t h, int tb, int lr, 
 
 #ifdef STUI_IMPLEMENTATION
 // Input API
-#define STUI_INPUT_RING_BUFFER_CAP 8
+#define STUI_INPUT_RING_BUFFER_CAP 128
 static char stui_input_buf[STUI_INPUT_RING_BUFFER_CAP];
 static uint8_t stui_input_head = 0, stui_input_tail = 0;
 // input API
-#ifndef _WIN32
 #include <unistd.h>
-#endif
-#ifdef _MINOS
 #include <minos/sysstd.h>
-#endif
 
 char stui_peak_byte(size_t n) {
-    if(stui_input_tail + n >= stui_input_head) return 0;
-    return stui_input_buf[stui_input_tail + n];
+    if (stui_input_tail + n >= stui_input_head) return -1;
+    return stui_input_buf[(stui_input_tail + n) % STUI_INPUT_RING_BUFFER_CAP];
 }
 char stui_eat_byte(void) {
     if(stui_input_tail == stui_input_head) {
@@ -282,19 +278,9 @@ void stui_window_border(size_t x, size_t y, size_t w, size_t h, int tb, int lr, 
 }
 
 // Terminal API
-#ifdef _MINOS
 # include <minos/tty/tty.h>
-#elif _WIN32
-# include <Windows.h>
-#else
-# include <termios.h>
-# include <unistd.h>
-# include <signal.h>
-# include <sys/ioctl.h>
-#endif
 
 void stui_term_get_size(size_t *w, size_t *h) {
-#ifdef _MINOS
     TtySize size = { 0 };
     if(tty_get_size(0, &size) < 0) {
         *w = 80;
@@ -303,67 +289,21 @@ void stui_term_get_size(size_t *w, size_t *h) {
     }
     *w = size.width;
     *h = size.height;
-#elif _WIN32
-    HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
-    CONSOLE_SCREEN_BUFFER_INFO csbi;
-    GetConsoleScreenBufferInfo(hConsole, &csbi);
-    *w = csbi.srWindow.Right - csbi.srWindow.Left + 1;
-    *h = csbi.srWindow.Bottom - csbi.srWindow.Top + 1;
-#else
-    struct winsize winsz;
-    ioctl(0, TIOCGWINSZ, &winsz);
-    *w = winsz.ws_col;
-    *h = winsz.ws_row;
-#endif
 }
 stui_term_flag_t stui_term_get_flags(void) {
     stui_term_flag_t flags = 0;
-#ifdef _MINOS
     ttyflags_t tty_flags;
     tty_get_flags(fileno(stdin), &tty_flags);
     if(tty_flags & TTY_ECHO)    flags |= STUI_TERM_FLAG_ECHO;
     if(tty_flags & TTY_INSTANT) flags |= STUI_TERM_FLAG_INSTANT;
-#elif _WIN32
-    HANDLE hStdin = GetStdHandle(STD_INPUT_HANDLE);
-    DWORD mode;
-    GetConsoleMode(hStdin, &mode);
-    if (mode & ENABLE_ECHO_INPUT) flags |= STUI_TERM_FLAG_ECHO;
-    if (!(mode & ENABLE_LINE_INPUT)) flags |= STUI_TERM_FLAG_INSTANT;
-#else
-    // Assume Unix platform
-    struct termios term;
-    tcgetattr(STDIN_FILENO, &term);
-    if(term.c_lflag & ECHO)      flags |= STUI_TERM_FLAG_ECHO;
-    if(!(term.c_lflag & ICANON)) flags |= STUI_TERM_FLAG_INSTANT;
-#endif
     return flags;
 }
 void stui_term_set_flags(stui_term_flag_t flags) {
-#ifdef _MINOS
     ttyflags_t tty_flags;
     tty_get_flags(fileno(stdin), &tty_flags);
     tty_flags &= ~(TTY_ECHO | TTY_INSTANT);
     if(flags & STUI_TERM_FLAG_ECHO) tty_flags |= TTY_ECHO;
     if(flags & STUI_TERM_FLAG_INSTANT) tty_flags |= TTY_INSTANT;
     tty_set_flags(fileno(stdin), tty_flags);
-#elif _WIN32
-    HANDLE hStdin = GetStdHandle(STD_INPUT_HANDLE);
-    DWORD mode;
-    GetConsoleMode(hStdin, &mode);
-    mode &= ~(ENABLE_ECHO_INPUT | ENABLE_LINE_INPUT);
-    if (flags & STUI_TERM_FLAG_ECHO) 
-        mode |= ENABLE_ECHO_INPUT;
-    if (!(flags & STUI_TERM_FLAG_INSTANT)) 
-        mode |= ENABLE_LINE_INPUT;
-    SetConsoleMode(hStdin, mode);
-#else
-    // Assume Unix platform
-    struct termios term;
-    tcgetattr(STDIN_FILENO, &term);
-    term.c_lflag &= ~(ECHO | ICANON);
-    if(flags & STUI_TERM_FLAG_ECHO) term.c_lflag |= ECHO;
-    if(!(flags & STUI_TERM_FLAG_INSTANT)) term.c_lflag |= ICANON;
-    tcsetattr(STDIN_FILENO, TCSANOW, &term);
-#endif
 }
 #endif
