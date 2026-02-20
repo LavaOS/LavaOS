@@ -228,6 +228,10 @@ int main(int argc, char** argv) {
         cmd_append(&cmd, ld, "-g", "-T", "linker.ld", "-o", kernel);
         da_append_many(&cmd, objs.items, objs.count);
         if(!nob_cmd_run_sync_and_reset(&cmd)) return 1;
+
+        // Stripping kernel highly recudes size!
+        cmd_append(&cmd, "strip", "--strip-all", kernel);
+        if(!nob_cmd_run_sync_and_reset(&cmd)) return 1;
     }
     const char* iso_files[] = {
         "vendor/limine/limine-bios.sys", 
