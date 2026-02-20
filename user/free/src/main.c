@@ -8,11 +8,6 @@
 #include <assert.h>
 #include <sizes.h>
 
-#define KiB ((long)1024)
-#define MiB ((long)1024 * KiB)
-#define GiB ((long)1024 * MiB)
-#define TiB ((long)1024 * GiB)
-
 int main() {
     char namebuf[MAX_SYSCTL_NAME];
     intptr_t e = _sysctl(SYSCTL_KERNEL_NAME, namebuf);
