@@ -51,6 +51,8 @@
 #include "delay.h"
 #include "rtc.h"
 #include "fblogger.h"
+#include "hash_table.h"
+#include "kht.h"
 
 void spawn_init(void) {
     intptr_t e = 0;
@@ -110,6 +112,10 @@ void _start() {
     init_general_caches();
     init_charqueue();
     printk("[ OK ] Configured caches.\n");
+    printk("[WAIT] Configuring and testing kernel hash table.\n");
+    ht_init(&kernel_ht);
+    ht_test();
+    printk("[ OK ] Kernel hash table is fine.\n");
     printk("[VERB] Loading PCI...\n");
     init_pci();
     printk("[VERB] Loading SMP...\n");

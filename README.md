@@ -7,6 +7,7 @@
   - [Doomgeneric (Ported by dcraftbg)](https://github.com/Dcraftbg/doomgeneric), licensed under the **GPLv2 License** (see `user/doomgeneric/LICENSE`).
   - [DIM text editor (By dcraftbg)](https://github.com/Dcraftbg/dim), licensed under the **MIT License** (see `licenses/LICENSE.DIM`).
   - [Sinux Kernel (amirh1385 fork, Original project: https://github.com/CyberSinook/Sinux)](https://github.com/amirh1385/Sinux), licensed under the **MIT License** (see `licenses/LICENSE.SINUX`).
+  - [Some headers are ported from Linux kernel version 3.0](https://github.com/torvalds/linux/tree/v3.0), licensed under the **GPLv2 License** (see `licenses/LICENSE.LINUX3`).
 - All third-party licenses are preserved in this repository as required.
 
 ### ⚠️ Visit our website:

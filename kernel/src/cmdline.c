@@ -5,10 +5,12 @@
 #include "utils.h"
 #include "bootutils.h"
 #include "log.h"
+#include "memory.h"
 
 typedef struct {
     const char* name;
     char* value;
+    size_t size;
 } CmdLineParam;
 CmdLineParam cmdline_params[MAX_PARAMS]={{NULL, NULL}};
 size_t cmdline_params_len=0;
@@ -21,12 +23,13 @@ char* cmdline_get(const char* name) {
     }
     return NULL;
 }
-bool  cmdline_set(const char* name, char* value) {
-    if(cmdline_params_len==MAX_PARAMS) return false;
+bool cmdline_set(const char* name, char* value) {
+    if(cmdline_params_len == MAX_PARAMS) return false;
     static_assert(MAX_PARAMS > 0, "MAX_PARAMS may not be 0");
     size_t hash = dbj2(name) % MAX_PARAMS;
-    while(cmdline_params[hash].name) hash = (hash+1)%MAX_PARAMS;
-    cmdline_params[hash] = (CmdLineParam){ name, value };
+    while(cmdline_params[hash].name) hash = (hash + 1) % MAX_PARAMS;
+    size_t val_size = strlen(value) + 1;
+    cmdline_params[hash] = (CmdLineParam){ name, value, val_size };
     cmdline_params_len++;
     return true;
 }
@@ -55,14 +58,15 @@ void init_cmdline() {
         cmdline=end+1;
     }
 }
-
 void deinit_cmdline() {
     for(size_t i = 0; i < MAX_PARAMS; i++) {
         if(cmdline_params[i].name) {
-            // We don't have kfree :(
-            // kfree(cmdline_params[i].value);
+            if(cmdline_params[i].value)
+                kernel_free(cmdline_params[i].value, cmdline_params[i].size);
+
             cmdline_params[i].name = NULL;
             cmdline_params[i].value = NULL;
+            cmdline_params[i].size = 0;
         }
     }
     cmdline_params_len = 0;

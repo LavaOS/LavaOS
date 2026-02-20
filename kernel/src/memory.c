@@ -19,13 +19,38 @@ void kernel_pages_dealloc(paddr_t page, size_t count) {
 void kernel_page_dealloc(paddr_t page) {
     kernel_pages_dealloc(page, 1);
 }
-void* kernel_malloc(size_t size) {
+/* void* kernel_malloc(size_t size) {
     mutex_lock(&kernel.map_lock);
     size_t pages = (size + PAGE_SIZE - 1) >> PAGE_SHIFT;
     void* addr = bitmap_alloc(&kernel.map, pages);
     if(addr) addr = (void*)((uintptr_t)addr | KERNEL_MEMORY_MASK);
     mutex_unlock(&kernel.map_lock);
     return addr;
+} */
+void* kernel_malloc(size_t size) {
+    if (size == 0) return NULL;
+
+    mutex_lock(&kernel.map_lock);
+
+    size_t pages = (size + PAGE_SIZE - 1) >> PAGE_SHIFT;
+    void* addr = bitmap_alloc(&kernel.map, pages);
+
+    if (addr)
+        addr = (void*)((uintptr_t)addr | KERNEL_MEMORY_MASK);
+
+    mutex_unlock(&kernel.map_lock);
+    return addr;
+}
+void kernel_free(void* ptr, size_t size) {
+    if (!ptr || size == 0) return;
+
+    mutex_lock(&kernel.map_lock);
+
+    size_t pages = (size + PAGE_SIZE - 1) >> PAGE_SHIFT;
+    void* phys = (void*)((uintptr_t)ptr & ~KERNEL_MEMORY_MASK);
+    bitmap_dealloc(&kernel.map, phys, pages);
+
+    mutex_unlock(&kernel.map_lock);
 }
 void kernel_dealloc(void* data, size_t size) {
     if(!data) return;
