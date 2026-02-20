@@ -1,9 +1,11 @@
 #include "cmdline.h"
+#include "printk.h"
 #include "hashutils.h"
 #include "string.h"
 #include "utils.h"
 #include "bootutils.h"
 #include "log.h"
+
 typedef struct {
     const char* name;
     char* value;
@@ -45,11 +47,24 @@ void init_cmdline() {
 
         const char* name = cmdline;
         char* value = split+1;
-        ktrace("[cmdline] Adding: %s=%s", name, value);
+        printk("[CMDL] Adding: %s=%s\n", name, value);
         if(!cmdline_set(name, value)) {
             kwarn("[cmdline] Ignoring %s=%s because we have exceeded the max arguments", name, value);
         }
     end_loop:
         cmdline=end+1;
     }
+}
+
+void deinit_cmdline() {
+    for(size_t i = 0; i < MAX_PARAMS; i++) {
+        if(cmdline_params[i].name) {
+            // We don't have kfree :(
+            // kfree(cmdline_params[i].value);
+            cmdline_params[i].name = NULL;
+            cmdline_params[i].value = NULL;
+        }
+    }
+    cmdline_params_len = 0;
+    printk("cmdline deinited!\n");
 }

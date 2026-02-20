@@ -1,5 +1,6 @@
 #include "xhci.h"
 #include "../../printk.h"
+#include "../../utils.h"
 #include <msi.h>
 #include <iomem.h>
 #include <page.h>

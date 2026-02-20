@@ -82,13 +82,13 @@ int blocking_client(void*) {
     const char* addr = "/sockets/gtnet";
     struct stat stats;
     while(stat(addr, &stats) && errno == ENOENT);
-    // info("Trying to connect...");
+    info("Trying to connect...");
     strcpy(server_addr.sminos_path, addr);
     if(connect(fd, (struct sockaddr*)&server_addr, sizeof(server_addr)) < 0) {
         error("Failed to connect to %s: %s", addr, strerror(errno));
         return 1;
     }
-    // info("Calling send...");
+    info("Calling send...");
     char msg[128];
     intptr_t n;
     assert((n=readline(msg, sizeof(msg)-1)) >= 0);
@@ -97,7 +97,7 @@ int blocking_client(void*) {
     assert(n >= 0);
     msg[n] = '\0';
     printf("%s", msg);
-    // info("quitting server");
+    info("quitting server");
     close(fd);
     return 0;
 }

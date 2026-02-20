@@ -8,7 +8,7 @@ void charqueue_push(CharQueue* queue, uint32_t point) {
     queue->head &= queue->mask;
     size_t at = queue->head++;
     if((queue->head & queue->mask) == queue->tail) {
-        kwarn("charqueue overflow");
+        kpanic("charqueue overflow");
     }
     queue->addr[at] = point;
 }

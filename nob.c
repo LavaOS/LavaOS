@@ -172,11 +172,7 @@ const char* default_config =
      "//// Other options\n"
      "//// Enable/Disable serial colors for loggers\n"
      "// #define NO_SERIAL_COLOR\n"
-     "//// Enable the Welcome.txt message (will be created at runtime)\n"
-     "//// NOTE: This like embedfs has been superseeded by initrd\n"
-     "// #define ENABLE_WELCOME\n"
-     "//// Enable Jake colorscheme for framebuffers\n"
-     "// #define JAKE_COLORSCHEME\n";
+     ;
 int main(int argc, char** argv) {
     Cmd cmd = { 0 };
     NOB_GO_REBUILD_URSELF(argc, argv);

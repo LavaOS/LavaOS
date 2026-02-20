@@ -211,7 +211,9 @@ intptr_t vfs_register_device(const char* name, Inode* device) {
     intptr_t e;
     Inode* devices;
     if((e=vfs_find_abs("/devices", &devices)) < 0) return e;
-    if(devices->superblock->fs != &tmpfs) kpanic("/devices is not inside tmpfs");
+    if(devices->superblock->fs != &tmpfs) 
+        kpanic("/devices is not inside filesystem.");
+    // if(devices->superblock->fs != &tmpfs) kpanic("/devices is not inside tmpfs");
     e = tmpfs_register_device(devices, device, name, strlen(name));
     idrop(devices);
     return e;

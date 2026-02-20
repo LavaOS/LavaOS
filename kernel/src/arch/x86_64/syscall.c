@@ -1,4 +1,5 @@
 #include "../../port.h"
+#include "../../shutdown.h"
 
 #include "syscall.h"
 #include "print.h"
@@ -732,6 +733,7 @@ intptr_t sys_sysctl(uint32_t op, void* arg) {
         SysctlMeminfo* mem_info = arg;
         mem_info->total = kernel.map.page_count * PAGE_SIZE;
         mem_info->free = kernel.map.page_available * PAGE_SIZE;
+        mem_info->used = mem_info->total - mem_info->free;
     } break;
     default:
         return -UNSUPPORTED;
@@ -739,10 +741,12 @@ intptr_t sys_sysctl(uint32_t op, void* arg) {
     return 0;
 }
 intptr_t sys_shutdown() {
+    do_poweroff_tasks();
     outw(0xF4, 0x0000);
     return 0;
 }
 intptr_t sys_reboot() {
+    do_poweroff_tasks();
     outb(0x64, 0xFE);
     return 0;
 }

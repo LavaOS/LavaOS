@@ -63,12 +63,12 @@ intptr_t ustar_unpack(const char* into, const char* ustar_data, size_t ustar_siz
         memcpy(path+into_len, name, name_len);
         path[into_len+name_len] = '\0';
 
-        ktrace("ustar: %s of type %c size %zu", path, type, size);
+        ktrace("[USTR] %s of type %c size %zu", path, type, size);
         if(type == '5') {
             Inode* dir;
             if((e = vfs_creat_abs(path, O_DIRECTORY, &dir)) < 0) {
                 if(e != -ALREADY_EXISTS) {
-                    printk("ERROR: ustar: Could not mkdir %s : %s", path, status_str(e));
+                    printk("[USTR] Could not mkdir %s : %s\n", path, status_str(e));
                     goto err; 
                 }
             }
@@ -76,11 +76,11 @@ intptr_t ustar_unpack(const char* into, const char* ustar_data, size_t ustar_siz
         } else {
             Inode* file;
             if((e = vfs_creat_abs(path, 0, &file)) < 0) {
-                printk("ERROR: ustar: Could not create %s : %s", path, status_str(e));
+                printk("[USTR] Could not create %s : %s\n", path, status_str(e));
                 goto err;
             }
             if((e = write_exact(file, ustar_data+512, size, 0)) < 0) {
-                printk("ERROR: ustar: Could not write data: %s : %s", path, status_str(e));
+                printk("[USTR] Could not write data: %s : %s\n", path, status_str(e));
                 idrop(file);
                 goto err;
             }

@@ -83,7 +83,7 @@ int epoll_add_fd(int epollfd, int fd, int events) {
 int main(void) {
     PlutoInstance instance;
     pluto_create_instance(&instance);
-    size_t width = 640, height = 480;
+    size_t width = 800, height = 600;
     int win = pluto_create_window(&instance, &(WmCreateWindowInfo) {
         .width = width,
         .height = height,

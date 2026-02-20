@@ -134,14 +134,14 @@ void ide_process_next(){
 
 void ide_init(){
     uint8_t status = inb(IDE_STATUS);
-    printk("IDE STATUS = %x\n", status);
+    printk("[STRG] IDE STATUS = %x\n", status);
     if (!ide_identify(identify_buffer)) {
-        printk("IDE Identify failed\n");
+        printk("[STRG] IDE Identify failed\n");
         return;
     }
 
     ide_queue[0].used = 1;
     ide_queue[0].next_node = 0xFFFF;
 
-    printk("IDE initialized\n");
+    printk("[STRG] IDE initialized\n");
 }

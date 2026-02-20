@@ -7,6 +7,6 @@ enum {
     SYSCTL_COUNT
 };
 typedef struct {
-    uint64_t total, free;
+    uint64_t total, free, used;
 } SysctlMeminfo;
 intptr_t sysctl(uint32_t op, void* arg);

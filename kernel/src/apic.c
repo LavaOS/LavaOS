@@ -2,7 +2,6 @@
 #include "log.h"
 #include "acpi.h"
 #include "apic.h"
-#include "printk.h"
 
 typedef struct {
     ACPISDTHeader header;
@@ -146,13 +145,11 @@ void init_apic() {
     ACPISDTHeader* apic_header = acpi_find("APIC"); 
     if(!apic_header) return;
     if(apic_header->length < sizeof(APIC)) {
-        printk("(APIC) Length was odd");
         goto length_check_err;
     }
     APIC* apic = (APIC*)apic_header;
     lapic_addr = iomap_bytes(apic->lapic_addr, 4096, KERNEL_PFLAG_PRESENT | KERNEL_PFLAG_WRITE | KERNEL_PFLAG_WRITE_THROUGH);
     if(!lapic_addr) {
-        printk("LAPIC not enough memory to map in lapic");
         goto lapic_addr_err;
     }
     for(
@@ -163,37 +160,24 @@ void init_apic() {
         switch(entry->type) {
         case MADT_ENTRY_OVERRIDE: {
             if(entry->length < sizeof(InterruptOverrideEntry)) {
-                printk("InterruptOverrideEntry entry with size < %zu (size=%zu)", sizeof(InterruptOverrideEntry), entry->length);
                 continue;
             }
-            InterruptOverrideEntry* io_entry = (InterruptOverrideEntry*)entry;
-            kinfo("InterruptOverrideEntry:");
-            kinfo(" bus_src: %02X", io_entry->bus_src);
-            kinfo(" irq_src: %02X", io_entry->irq_src);
-            kinfo(" gsi: %08X", io_entry->gsi);
-            kinfo(" flags: %02X", io_entry->flags);
         } break;
         case MADT_ENTRY_IOAPIC: {
             if(entry->length < sizeof(IOApicEntry)) {
-                printk("IOAPIC entry with size < %zu (size=%zu)", sizeof(IOApicEntry), entry->length);
                 continue;
             }
             IOApicEntry* ioapic_entry = (IOApicEntry*)entry;
             void* new_ioapic_addr = iomap_bytes(ioapic_entry->ioapic_addr, IOAPIC_ADDR_SPACE_SIZE, KERNEL_PFLAG_WRITE | KERNEL_PFLAG_PRESENT | KERNEL_PFLAG_WRITE_THROUGH);
             if(!new_ioapic_addr) {
-                printk("IOAPIC not enough memory to map it in");
                 continue;
             }
             if(ioapic.addr)
                 iounmap_bytes(ioapic.addr, IOAPIC_ADDR_SPACE_SIZE);
             ioapic.addr = new_ioapic_addr;
             ioapic.gsi  = ioapic_entry->gsi;
-            kinfo("Mapped in ioapic!");
         } break;
         } 
-        kinfo("APIC entry:");
-        kinfo(" - type: %d", entry->type);
-        kinfo(" - length: %zu", entry->length);
     }
     pit_set_hz(1000);
     irq_register(0, _tmp_pit_handler, 0);

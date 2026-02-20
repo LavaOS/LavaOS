@@ -63,7 +63,7 @@ void spawn_init(void) {
     const char* envv[] = {"FOO=BAR", "BAZ=A", NULL};
     env  = create_args(envv);
     if((e = exec_new(epath, &args, &env)) < 0) kpanic("Failed to exec %s : %s",epath,status_str(e));
-    kinfo("Spawning `%s` id=%zu tid=%zu", epath, (size_t)e, ((Process*)(kernel.processes.items[(size_t)e]))->main_thread->id);
+    kinfo("Spawning `%s` id=%zu pid=%zu", epath, (size_t)e, ((Process*)(kernel.processes.items[(size_t)e]))->main_thread->id);
 }
 void _start() {
     disable_interrupts();
@@ -98,12 +98,11 @@ void _start() {
     KERNEL_SWITCH_VTABLE();
     enable_cpu_features();
     printk("[ OK ] Initilazed essential components and devices.\n");
-    printk("[WAIT]Starting Interrupt controller...\n");
+    printk("[WAIT] Starting Interrupt controller...\n");
     init_pic();
     init_acpi();
-    printk("[ OK ]Started Interrupt controller.\n");
+    printk("[ OK ] Started Interrupt controller.\n");
     enable_interrupts();
-    // Caches
     printk("[WAIT] Configuring caches...\n");
     init_cache_cache();
     minos_socket_init_cache();
@@ -111,13 +110,10 @@ void _start() {
     init_general_caches();
     init_charqueue();
     printk("[ OK ] Configured caches.\n");
-    // Devices
     printk("[VERB] Loading PCI...\n");
     init_pci();
-    // SMP
     printk("[VERB] Loading SMP...\n");
     init_smp();
-    // Initialisation for process related things
     printk("[VERB] Configuring memory...\n");
     init_memregion();
     init_processes();
@@ -139,14 +135,16 @@ void _start() {
     printk("[VERB] Starting IDE...\n");
     ide_init();
 
-    // VFS
     enable_interrupts();
     printk("[WAIT] Initilazing filesystms...\n");
+    printk("[VERB] Initilazing VFS...\n");
     init_vfs();
+    printk("[VERB] Initilazing rootfs...\n");
     init_rootfs();
     printk("[ OK ] Initilazed filesystms.\n");
-    printk("[VERB] Initilazing VFS devices...\n");
+    printk("[VERB] Initilazing devices...\n");
     init_devices();
+    printk("[VERB] Initilazing TTY...\n");
     init_tty();
 
     printk("[VERB] Spawning init...\n");

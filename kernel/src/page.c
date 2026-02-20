@@ -276,10 +276,6 @@ void page_join(page_t parent, page_t child) {
          }
     }
 }
-void page_destruct(page_t pml4_addr, uint16_t type) {
-    kwarn("page_destruct is not good. Will be removed at some point");
-}
-
 static bool page_empty(page_t page, uint16_t until) {
     if(until==0) return true;
     for(uint16_t i=0; i < until; ++i) {

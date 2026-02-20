@@ -5,6 +5,7 @@
 
 const char* projects[] = {
     "librtc",
+    "libsize",
     "libstui",
     "time",
     "dim",
@@ -36,6 +37,7 @@ const char* projects[] = {
     "yes",
     "wm",
     "whoami",
+    "free",
     "miniterm"
 };
 bool go_run_nob_inside(Nob_Cmd* cmd, const char* dir, const char** argv, size_t argc) {

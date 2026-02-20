@@ -9,6 +9,7 @@
 
 #define KiB ((long)1024)
 #define MiB ((long)1024 * KiB)
+
 char empty_icon[] = "";
 size_t max_icon_width = 0;
 char* icon;
@@ -86,9 +87,10 @@ int main() {
     if(e < 0) {
         meminfo.total = 0;
         meminfo.free = 0;
+        meminfo.used = 0;
     }
     opt("OS: %s\n", namebuf);
-    opt("Memory: %ld / %ld MiB\n", (meminfo.total - meminfo.free) / MiB, meminfo.total / MiB);
+    opt("Memory: %ld / %ld MiB\n", meminfo.used / MiB, meminfo.total / MiB);
     opt("\n");
     icon_row();
     for(size_t i = 0; i < 8; ++i) {

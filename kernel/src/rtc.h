@@ -63,7 +63,7 @@ static void rtc_init() {
     rtc_base_time = rtc_read_raw();
     rtc_base_tsc = rdtsc();
 
-    printk("RTC initialized at UTC %02u:%02u:%02u\n",
+    printk("[TIME] initialized at UTC %02u:%02u:%02u\n",
            rtc_base_time.hour, rtc_base_time.minute, rtc_base_time.second);
 }
 
@@ -96,7 +96,7 @@ static rtc_time_t rtc_now() {
 /* ------------------------ PRINT UTC TIME ------------------------- */
 static void rtc_print_time() {
     rtc_time_t t = rtc_now();
-    printk("UTC Time is: %02u:%02u:%02u\n", t.hour, t.minute, t.second);
+    printk("[TIME] UTC Time is: %02u:%02u:%02u\n", t.hour, t.minute, t.second);
 }
 
 #endif // RTC_H

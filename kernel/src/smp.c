@@ -2,6 +2,9 @@
 // Then again a preboot will just fix all of this anyway so I'm postponing :)
 #include <limine.h>
 #include "log.h"
+#include "printk.h"
+#include "kpanic.h"
+
 static volatile struct limine_smp_request limine_smp_request = {
     .id = LIMINE_SMP_REQUEST,
     .revision = 0,
@@ -21,14 +24,13 @@ void ap_main(struct limine_smp_info* info) {
     mutex_lock(&tss_sync);
     reload_tss();
     mutex_unlock(&tss_sync);
-
     __asm__ volatile(
             "movq %0, %%cr3\n"
             :
             : "r" ((uintptr_t)kernel.pml4 & ~KERNEL_MEMORY_MASK)
         );
     // APIC divider of 16
-    kinfo("Hello from logical processor %zu lapic_id %zu", info->lapic_id, get_lapic_id());
+    printk("[CORE] Hello from logical processor %zu lapic_id %zu\n", info->lapic_id, get_lapic_id());
     enable_cpu_features();
     kernel.processors[info->lapic_id].initialised = true;
     lapic_timer_reload();
@@ -36,19 +38,27 @@ void ap_main(struct limine_smp_info* info) {
     enable_interrupts();
     asm volatile( "int $0x20" );
 }
+
+#define MAX_CPUS 16
+static uint8_t kernel_ap_stacks[MAX_CPUS][AP_STACK_SIZE] __attribute__((aligned(PAGE_SIZE)));
+
 void init_smp(void) {
     if(!limine_smp_request.response) return;
-    kinfo("There are %zu cpus", limine_smp_request.response->cpu_count);
+    size_t cpu_count = limine_smp_request.response->cpu_count;
+    // TODO: Allow unlimited CPU cores
+    if(cpu_count > MAX_CPUS) {
+        kpanic("Too many CPU cores! Maximix cores allowed = %u, found %zu", MAX_CPUS, cpu_count);
+    }
+    // Mark BSP as initialised
     kernel.processors[limine_smp_request.response->bsp_lapic_id].initialised = true;
-    for(size_t i = 0; i < limine_smp_request.response->cpu_count; ++i) {
+    for(size_t i = 0; i < cpu_count; ++i) {
         struct limine_smp_info* info = limine_smp_request.response->cpus[i];
-        if(info->lapic_id == limine_smp_request.response->bsp_lapic_id) continue; 
-        if(kernel.max_processor_id < info->lapic_id) kernel.max_processor_id = info->lapic_id;
-        // FIXME: This obviously leaks just like how the kernel stack kinda leaks.
-        // I think its fine but leaving this FIXME just in case
-        void* ap_stack_base_addr = kernel_malloc(AP_STACK_SIZE);
-        assert(ap_stack_base_addr && "Not enough memory for processors stack");
-        info->extra_argument = ((uintptr_t)ap_stack_base_addr) + AP_STACK_SIZE;
-        info->goto_address = (void*) &ap_init;
+        if(info->lapic_id == limine_smp_request.response->bsp_lapic_id)
+            continue;
+        if(kernel.max_processor_id < info->lapic_id)
+            kernel.max_processor_id = info->lapic_id;
+        // Assign stack from preallocated array instead of malloc
+        info->extra_argument = (uintptr_t)(kernel_ap_stacks[i] + AP_STACK_SIZE);
+        info->goto_address = (void*)&ap_init;
     }
 }

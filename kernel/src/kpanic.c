@@ -16,18 +16,31 @@ void kpanic(const char* fmt, ...) {
 
     va_start(args, fmt);
 
-    kclear(0xAA0000);
-    printk_set_color(0xFFFFFF, 0xAA0000);
+    kclear(0x8B0000);
+    printk_set_color(0xFFFFFF, 0x8B0000);
 
     printk("\n\n");
-    printk("  LavaOS has encountered a critical problem.\n");
-    printk("  The system has been halted to prevent damage.\n\n");
 
-    printk("  You can safely power off your computer.\n\n");
+    printk("  ###          ###  \n");
+    printk("  ###         ###   \n");
+    printk("  ###        ###    +---------------------------------------------+\n");
+    printk("            ###     |LavaOS has encountered a critical problem.   |\n");
+    printk("           ###      |The system has been halted to prevent damage.|\n");
+    printk("          ###       |You can safely power off your computer.      |\n");
+    printk("  ###    ###        +---------------------------------------------+\n");
+    printk("  ###   ###         \n");
+    printk("  ###  ###          \n");
+
+    printk("\n");
 
     printk("  Error: ");
     vprintk(fmt, args);
     printk("\n\n");
+
+    printk("  If you wont, you can create an issuse on GithHub to get help about this error.\n");
+    printk("  GitHub: https://github.com/LavaOS/LavaOS/\n");
+
+    //TODO: Error code
 
     printk_reset_color();
 

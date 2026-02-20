@@ -1,12 +1,14 @@
 #include "keyqueue.h"
+#include "kpanic.h"
 #include <assert.h>
 #include <log.h>
+
 void keyqueue_push(KeyQueue* queue, const Key key) {
     debug_assert(queue->addr);
     queue->head &= queue->mask;
     size_t at = queue->head++;
     if((queue->head & queue->mask) == queue->tail) {
-        kwarn("Key queue overflow!");
+        kpanic("Key queue overflow!");
     }
     queue->addr[at] = key;
 }

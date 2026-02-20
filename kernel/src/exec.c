@@ -1,5 +1,5 @@
 #include "exec.h"
-#include "printk.h"
+#include "kpanic.h"
 #include "elf.h"
 #include "memory.h"
 #include "page.h"
@@ -64,9 +64,6 @@ intptr_t fork(Task* task, Task* result, void* frame) {
     }
     return result->process->id;
 DEFER_ERR:
-    // TODO: Remove this:
-    // Destruct cr3, which we should NOT do
-    if(result->cr3) page_destruct(result->cr3, KERNEL_PTYPE_USER);
     if(result) drop_task(result);
     return e;
 }
@@ -177,7 +174,7 @@ static intptr_t load_elf(Task* task, Inode* file, uintptr_t offset, Elf64Header*
         } break;
         case ELF_PHEADER_INTERP: {
             if(pheader->filesize > sizeof(interp_buffer)-1) {
-                printk("Interpreter header overflows buffer");
+                kpanic("Interpreter header overflows buffer");
                 return -BUFFER_TOO_SMALL;
             }
             if((e=read_exact(file, interp_buffer, pheader->filesize, pheader->offset)) < 0) return e;
@@ -186,7 +183,7 @@ static intptr_t load_elf(Task* task, Inode* file, uintptr_t offset, Elf64Header*
         }
     }
     if(is_interp && interp) {
-        printk("Interpreter has its own interpreter? We don't allow that :(");
+        kpanic("Interpreter has its own interpreter? We don't allow that :(");
         return -RECURSIVE_ELF_INTERP;
     }
     if(interp) {
@@ -266,8 +263,6 @@ intptr_t exec(Task* task, Path* path, Args* args, Args* envs) {
     memcpy(task->name, path->path, path_len);
     task->name[path_len] = '\0';
 
-    // TODO: Maybe remove this?
-    // I don't really see a purpose in calling page_destruct anymore now that we have the 
     // memory regions
     paddr_t cr3_phys; 
     if(!(cr3_phys = kernel_page_alloc())) {
@@ -332,6 +327,5 @@ DEFER_ERR:
     if(kstack_region) memlist_dealloc(kstack_region, NULL);
     if(ustack_region) memlist_dealloc(ustack_region, NULL);
     if(file) idrop(file);
-    if(task->cr3) page_destruct(task->cr3, KERNEL_PTYPE_USER);
     return e;
 }

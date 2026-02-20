@@ -3,20 +3,17 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <stdbool.h>
-#include <unistd.h>  // execve
+#include <unistd.h>
 extern char **environ;
 
 #define MAX_INPUT 64
 
-static void read_input(char* buf, size_t max, bool hide) {
+static void read_input(char* buf, size_t max) {
     size_t i = 0;
     char c;
-
     while (i + 1 < max) {
         if (read(STDIN_FILENO, &c, 1) != 1) break;
-
         if (c == '\n' || c == '\r') break;
-
         if (c == '\b' || c == 127) {
             if (i > 0) {
                 i--;
@@ -24,15 +21,9 @@ static void read_input(char* buf, size_t max, bool hide) {
             }
             continue;
         }
-
         buf[i++] = c;
-
-        if (hide) write(STDOUT_FILENO, "\b \b", 3);
-        else       write(STDOUT_FILENO, &c, 1);
     }
-
     buf[i] = 0;
-    write(STDOUT_FILENO, "\n", 1);
 }
 
 int main(void) {
@@ -45,10 +36,10 @@ int main(void) {
     while (true) {
         write(STDOUT_FILENO, hostname, strlen(hostname));
         write(STDOUT_FILENO, " login: ", 8);
-        read_input(username, sizeof(username), false);
+        read_input(username, sizeof(username));
 
         write(STDOUT_FILENO, "password: ", sizeof("password: ") - 1);
-        read_input(password, sizeof(password), true);
+        read_input(password, sizeof(password));
 
         if (strcmp(username, "root") == 0 &&
             strcmp(password, "root") == 0) {
@@ -64,16 +55,11 @@ int main(void) {
 
             execve(path, argv, environ);
 
-            perror("failed to start shell");
-            /* write(STDOUT_FILENO,
-                  "login: failed to start shell\n",
-                  31); */
+            perror("[LGIN] Failed to start child");
             memset(password, 0, sizeof(password));
             exit(1);
         }
 
-        write(STDOUT_FILENO,
-              "Login incorrect\n\n",
-              17);
+        write(STDOUT_FILENO, "[LGIN] Login incorrect\n\n", 24);
     }
 }

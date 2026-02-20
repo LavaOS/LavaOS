@@ -21,7 +21,7 @@ void ps2_cmd_queue_issue(PS2CmdQueue* queue, const PS2Cmd cmd) {
     debug_assert(queue->addr);
     queue->head &= queue->mask;
     if(((queue->head + 1) & queue->mask) == queue->tail) {
-        kwarn("PS2 queue overflow!");
+        kpanic("PS2 queue overflow!");
         return;
     }
     queue->addr[queue->head] = cmd;

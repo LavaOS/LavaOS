@@ -4,3 +4,4 @@
 char* cmdline_get(const char* name);
 bool  cmdline_set(const char* name, char* value);
 void init_cmdline();
+void deinit_cmdline();
