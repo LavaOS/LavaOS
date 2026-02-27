@@ -53,6 +53,7 @@
 #include "fblogger.h"
 #include "hash_table.h"
 #include "kht.h"
+#include "shell/sh.h"
 
 void spawn_init(void) {
     intptr_t e = 0;
