@@ -19,8 +19,8 @@ int main(int argc, char **argv) {
         return 1;
     }
     if(!nob_mkdir_if_not_exists_silent(bindir)) return 1;
-    if(!nob_mkdir_if_not_exists_silent(temp_sprintf("%s/time", bindir))) return 1;
-    const char* output = temp_sprintf("%s/time/time", bindir);
+    if(!nob_mkdir_if_not_exists_silent(temp_sprintf("%s/free", bindir))) return 1;
+    const char* output = temp_sprintf("%s/free/free", bindir);
     File_Paths pathb = { 0 };
     String_Builder stb = { 0 };
     if(nob_c_needs_rebuild(&stb, &pathb, output, sources, ARRAY_LEN(sources))) {
@@ -33,6 +33,6 @@ int main(int argc, char **argv) {
         if(!nob_cmd_run_sync_and_reset(&cmd)) return 1;
     }
     char* rootdir = getenv("ROOTDIR");
-    if(rootdir && !copy_file(output, temp_sprintf("%s/user/time", rootdir))) 
+    if(rootdir && !copy_file(output, temp_sprintf("%s/user/free", rootdir))) 
         return 1;
 }
