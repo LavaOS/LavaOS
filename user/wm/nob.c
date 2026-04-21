@@ -12,6 +12,7 @@
 #   define COPY_RES INITRD "res"
 #endif
 
+#define strip(cmd, path)          nob_cmd_append(cmd, "strip", "-s", path)
 #define c_compiler(cmd)     nob_cmd_append(cmd, "x86_64-minos-gcc")
 #define c_output(cmd, path) nob_cmd_append(cmd, "-o", path)
 #define c_flags(cmd)        nob_cmd_append(cmd, "-Wall", "-Wextra", "-Wno-unused-function", "-Wno-unused-variable", "-MD", "-g")
@@ -34,6 +35,8 @@ bool build_main(Nob_String_Builder* sbuf, Nob_File_Paths* path_buf, Nob_Cmd* cmd
     nob_da_append_many(cmd, sources, sources_count);
     nob_cmd_append(cmd, "-Ivendor/stb");
     c_output(cmd, BUILD_DIR EXE);
+    nob_cmd_run_sync_and_reset(cmd);
+    strip(cmd, BUILD_DIR EXE);
     return nob_cmd_run_sync_and_reset(cmd);
 }
 bool build_vendor(Nob_String_Builder* sbuf, Nob_File_Paths* path_buf, Nob_Cmd* cmd) {

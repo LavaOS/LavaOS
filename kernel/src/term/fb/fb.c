@@ -116,7 +116,9 @@ intptr_t init_fbtty(void) {
 void deinit_fbtty(void) {
     // FIXME: Memory leak in here.
     // TODO: Implement cache_destory and remove this cache
-    fbtty_cache = NULL;
+    // fbtty_cache = NULL;
+    cache_dealloc(fbtty_cache, deinit_fbtty);
+    printk("fbtty deinited!\n");
 }
 
 static uint32_t fbtty_getchar(Tty* device);
@@ -168,7 +170,7 @@ static FbTty* fbtty_new_internal(Inode* keyboard, Framebuffer fb) {
 }
 
 static void fbtty_fill_blink(FbTty* fb, uint32_t color) {
-    fb_draw_codepoint_at(&fb->fb, fb->x*8, fb->y*16, fb->map[fb->y * fb->w + fb->x].c, 0xffffffff - color, color);
+    fb_draw_codepoint_at(&fb->fb, fb->x*8, fb->y*16, fb->map[fb->y * fb->w + fb->x].c, 0xC0C0C0 - color, color);
 }
 static intptr_t fbtty_getsize(Tty* device, TtySize* size) {
     FbTty* fbtty = (FbTty*)device;
@@ -235,6 +237,7 @@ static void handle_csi_final(FbTty* fbtty, uint32_t code) {
     switch(code) {
     case 'm': {
         int n = fbtty->csi.nums_count > 0 ? fbtty->csi.nums[0] : 0;
+
         switch(n) {
         case 0:
             fbtty->fg = VGA_FG;

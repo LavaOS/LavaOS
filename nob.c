@@ -65,7 +65,6 @@ static bool ustar_zip(Cmd* cmd, const char* dir, const char* result) {
 static bool build(Build*, Cmd* cmd) {
     if(!nob_mkdir_if_not_exists_silent("bin")) return false;
     if(!nob_mkdir_if_not_exists_silent("initrd")) return false;
-    if(!nob_mkdir_if_not_exists_silent("extras")) return false;
     if(!nob_mkdir_if_not_exists_silent("initrd/user")) return false;
     if(!nob_mkdir_if_not_exists_silent("initrd/sbin")) return false;
     if(!nob_mkdir_if_not_exists_silent("initrd/home")) return false;
@@ -82,7 +81,6 @@ static bool build(Build*, Cmd* cmd) {
     if(!go_run_nob_inside(cmd, "kernel")) return false;
     if(!go_run_nob_inside(cmd, "user")) return false;
     if(!ustar_zip(cmd, "initrd", "bin/iso/initrd")) return false;
-    if(!ustar_zip(cmd, "extras", "bin/iso/extras")) return false;
     return make_iso(cmd);
 }
 static bool run(Build* build, Cmd* cmd) {
@@ -92,7 +90,7 @@ static bool run(Build* build, Cmd* cmd) {
         "-smp", "2",
         "-m", "128",
         "-cdrom", "./bin/OS.iso",
-	"-device", "isa-debug-exit,iobase=0xf4,iosize=0x04", "-enable-kvm", "-cpu", "host"
+	"-enable-kvm", "-cpu", "host"
     );
     if(build->uefi) {
         const char* ovmf = getenv("OVMF");

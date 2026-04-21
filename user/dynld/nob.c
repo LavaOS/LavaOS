@@ -85,6 +85,8 @@ int main(int argc, char **argv) {
         da_append_many(&cmd, objs.items, objs.count);
         cmd_append(&cmd, "-o", exe);
         if(!cmd_run_sync_and_reset(&cmd)) return 1;
+        cmd_append(&cmd, "strip", "-s", exe);
+        if(!cmd_run_sync_and_reset(&cmd)) return 1;
     }
     char* rootdir = getenv("ROOTDIR");
     if(rootdir && !copy_file(exe, temp_sprintf("%s/user/dynld", rootdir))) 

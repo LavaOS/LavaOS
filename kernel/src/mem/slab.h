@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include <collections/list.h>
 #include <sync/mutex.h>
-#define MAX_CACHE_NAME 20
+#define MAX_CACHE_NAME 256
 // TODO: Deallocation of caches and cache_destory, cache_shrink etc.
 typedef struct Cache {
     struct list list;

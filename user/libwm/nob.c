@@ -83,6 +83,8 @@ int main(int argc, char** argv) {
     if(needs_rebuild(so, objs.items, objs.count)) {
         cmd_append(&cmd, cc, "-shared", "-o", so, "-Wl,--hash-style=sysv", "-static-libgcc");
         da_append_many(&cmd, objs.items, objs.count);
+        nob_cmd_run_sync_and_reset(&cmd);
+        cmd_append(&cmd, "strip", "-s", so);
         if(!nob_cmd_run_sync_and_reset(&cmd)) return 1;
     }
     const char* archive = nob_temp_sprintf("%s/libwm/libwm.a", bindir);

@@ -1,5 +1,8 @@
+#include "../../mc.h"
 #include "../../port.h"
+#include "../../power.h"
 #include "../../shutdown.h"
+#include "../../sockets/minos.h"
 
 #include "syscall.h"
 #include "print.h"
@@ -26,14 +29,16 @@ static intptr_t parse_path(Process* process, Path* res, const char* path) {
         return parse_abs(path, res);
     case '.':
         path++;
-        if(path[0] != '/') return -INVALID_PATH;
-        path++;
+        if(path[0] == '/') {
+            path++;
+        }
     default: 
         res->from = process->curdir_inode; 
         res->path = path;
         return 0;
     }
 }
+
 #define strace(fmt, ...) ktrace("P%zu:T%zu "fmt, current_process()->id, current_task()->id, __VA_ARGS__)
 #define strace1(fmt)     ktrace("P%zu:T%zu "fmt, current_process()->id, current_task()->id)
 // TODO: Safety features like copy_to_userspace, copy_from_userspace
@@ -723,8 +728,25 @@ intptr_t sys_shmrem(size_t key) {
     mutex_unlock(&kernel.shared_memory_mutex);
     return 0;
 }
+
 char _kernel_name[] = "LavaOS";
+
 intptr_t sys_sysctl(uint32_t op, void* arg) {
+    uint64_t kernel_cache_cache = measure_cache_bytes(kernel.cache_cache);
+    uint64_t kernel_inode_cache = measure_cache_bytes(kernel.inode_cache);
+    uint64_t kernel_task_cache = measure_cache_bytes(kernel.task_cache);
+    uint64_t kernel_resource_cache = measure_cache_bytes(kernel.resource_cache);
+    uint64_t kernel_memregion_cache = measure_cache_bytes(kernel.memregion_cache);
+    uint64_t kernel_memlist_cache = measure_cache_bytes(kernel.memlist_cache);
+    uint64_t kernel_process_cache = measure_cache_bytes(kernel.process_cache);
+    uint64_t kernel_allocation_cache = measure_cache_bytes(kernel.allocation_cache);
+    uint64_t kernel_heap_cache = measure_cache_bytes(kernel.heap_cache);
+    uint64_t kernel_charqueue_cache = measure_cache_bytes(kernel.charqueue_cache);
+    uint64_t kernel_pci_device_cache = measure_cache_bytes(kernel.pci_device_cache);
+    uint64_t kernel_cache64_cache = measure_cache_bytes(kernel.cache64);
+    uint64_t kernel_cache256_cache = measure_cache_bytes(kernel.cache256);
+    uint64_t kernel_shared_memory_cache = measure_cache_bytes(kernel.shared_memory_cache);
+
     switch(op) {
     case SYSCTL_KERNEL_NAME:
         memcpy(arg, _kernel_name, sizeof(_kernel_name)-1);
@@ -733,7 +755,9 @@ intptr_t sys_sysctl(uint32_t op, void* arg) {
         SysctlMeminfo* mem_info = arg;
         mem_info->total = kernel.map.page_count * PAGE_SIZE;
         mem_info->free = kernel.map.page_available * PAGE_SIZE;
+        mem_info->cached = kernel_cache_cache + kernel_inode_cache + kernel_task_cache + kernel_resource_cache + kernel_memregion_cache + kernel_memlist_cache + kernel_process_cache + kernel_allocation_cache + kernel_heap_cache + kernel_charqueue_cache + kernel_pci_device_cache + kernel_cache64_cache + kernel_cache256_cache + kernel_shared_memory_cache;
         mem_info->used = mem_info->total - mem_info->free;
+        mem_info->available = mem_info->free - mem_info->cached;
     } break;
     default:
         return -UNSUPPORTED;
@@ -742,11 +766,28 @@ intptr_t sys_sysctl(uint32_t op, void* arg) {
 }
 intptr_t sys_shutdown() {
     do_poweroff_tasks();
-    outw(0xF4, 0x0000);
+    powr_shutdown();
     return 0;
 }
 intptr_t sys_reboot() {
     do_poweroff_tasks();
-    outb(0x64, 0xFE);
+    powr_reboot();
+    return 0;
+}
+intptr_t sys_realloc_caches() {
+    cache_dealloc(kernel.cache_cache, sys_realloc_caches);
+    cache_dealloc(kernel.inode_cache, sys_realloc_caches);
+    cache_dealloc(kernel.task_cache, sys_realloc_caches);
+    cache_dealloc(kernel.resource_cache, sys_realloc_caches);
+    cache_dealloc(kernel.memregion_cache, sys_realloc_caches);
+    cache_dealloc(kernel.memlist_cache, sys_realloc_caches);
+    cache_dealloc(kernel.process_cache, sys_realloc_caches);
+    cache_dealloc(kernel.allocation_cache, sys_realloc_caches);
+    cache_dealloc(kernel.heap_cache, sys_realloc_caches);
+    cache_dealloc(kernel.charqueue_cache, sys_realloc_caches);
+    cache_dealloc(kernel.pci_device_cache, sys_realloc_caches);
+    cache_dealloc(kernel.cache64, sys_realloc_caches);
+    cache_dealloc(kernel.cache256, sys_realloc_caches);
+    cache_dealloc(kernel.shared_memory_cache, sys_realloc_caches);
     return 0;
 }

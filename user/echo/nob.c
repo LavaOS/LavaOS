@@ -10,6 +10,7 @@
 #   define COPY_DIR MINOS_ROOT "initrd/user/"
 #endif
 
+#define strip(cmd, path)    nob_cmd_append(cmd, "strip", "-s", path)
 #define c_compiler(cmd)     nob_cmd_append(cmd, "x86_64-minos-gcc")
 #define c_output(cmd, path) nob_cmd_append(cmd, "-o", path)
 #define c_flags(cmd)        nob_cmd_append(cmd, "-Wall", "-Wextra", "-MD")
@@ -19,6 +20,8 @@ bool cc(Nob_Cmd* cmd) {
     c_flags(cmd);
     nob_cmd_append(cmd, "src/main.c");
     c_output(cmd, BUILD_DIR EXE);
+    nob_cmd_run_sync_and_reset(cmd);
+    strip(cmd, BUILD_DIR EXE);
     return nob_cmd_run_sync_and_reset(cmd);
 }
 int main(int argc, char **argv) {

@@ -4,6 +4,8 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <socket.h>
+#include <mem/slab.h>
+
 typedef struct MinOSSocket MinOSSocket;
 typedef struct MinOSServer MinOSServer;
 typedef struct MinOSClient MinOSClient;

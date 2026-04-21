@@ -106,6 +106,14 @@ void _start() {
     init_acpi();
     printk("[ OK ] Started Interrupt controller.\n");
     enable_interrupts();
+    printk("[WAIT] Doing IO ports self test.\n");
+    outb(0x00, 0x00);
+    outw(0x00, 0x00);
+    outl(0x00, 0x00);
+    inb(0x00);
+    inw(0x00);
+    inl(0x00);
+    printk("[ OK ] IO ports self test finished.\n");
     printk("[WAIT] Configuring caches...\n");
     init_cache_cache();
     minos_socket_init_cache();
@@ -121,7 +129,9 @@ void _start() {
     init_pci();
     printk("[VERB] Loading SMP...\n");
     init_smp();
-    printk("[VERB] Configuring memory...\n");
+    printk("[VERB] Initialazing load balancer lock...\n");
+    spinlock_init(&kernel.load_balancer_lock);
+    printk("[VERB] Configuring memory, starting core tasks and scheduler...\n");
     init_memregion();
     init_processes();
     init_tasks();
@@ -154,9 +164,9 @@ void _start() {
     printk("[VERB] Initilazing TTY...\n");
     init_tty();
 
-    printk("[VERB] Spawning init...\n");
+    const char* boot_lksh = cmdline_get("lksh");
 
-    spawn_init();
+    if(!boot_lksh) spawn_init();
 
     disable_interrupts();
     irq_clear(kernel.task_switch_irq);

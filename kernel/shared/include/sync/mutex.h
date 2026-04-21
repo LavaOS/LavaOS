@@ -1,6 +1,6 @@
 #pragma once
 #include <stdatomic.h>
-typedef atomic_bool Mutex;
+typedef atomic_flag Mutex;
 // TODO: thread_yield
 //       ^ will require thread yield syscall
 #define mutex_lock(m) \

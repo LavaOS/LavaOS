@@ -17,7 +17,9 @@ int main() {
     if(e < 0) {
         meminfo.total = 0;
         meminfo.free = 0;
+        meminfo.cached = 0;
         meminfo.used = 0;
+        meminfo.available = 0;
     }
-    printf("Total: %ld MiB\nUsed: %ld MiB\nFree: %ld MiB\nShared: %ld MiB\nBuff/Cache: %ld MiB\nAvailable: %ld MiB\n", meminfo.total / MiB, meminfo.used / MiB, meminfo.free / MiB, 0, 0, meminfo.free / MiB);
+    printf("Total: %ld MiB\nUsed: %ld MiB\nFree: %ld MiB\nShared/Cache: %ld MiB\nAvailable: %ld MiB\n", meminfo.total / MiB, meminfo.used / MiB, meminfo.free / MiB, meminfo.cached / MiB, meminfo.available / MiB);
 }

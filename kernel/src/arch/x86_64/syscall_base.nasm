@@ -33,6 +33,7 @@ extern sys_shmrem
 extern sys_sysctl
 extern sys_shutdown
 extern sys_reboot
+extern sys_realloc_caches
 %define KERNEL_UNSUPPORTED 7
 section .text
 global syscall_base
@@ -70,6 +71,7 @@ syscall_table:
    dq sys_sysctl
    dq sys_shutdown
    dq sys_reboot
+   dq sys_realloc_caches
 syscall_table_end:
 section .text
 global _irq_128

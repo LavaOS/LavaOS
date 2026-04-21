@@ -12,6 +12,7 @@
 // Picking a processor to run on
 #include "load_balance.h"
 #include "apic.h"
+#include <sync/spinlock.h>
 
 #define return_defer_err(x) do {\
     e=(x);\
@@ -26,7 +27,8 @@ intptr_t fork(Task* task, Task* result, void* frame) {
     list = list->next;
     paddr_t cr3_phys;
     if(!(cr3_phys = kernel_page_alloc()))
-        return_defer_err(-NOT_ENOUGH_MEM);
+        // return_defer_err(-NOT_ENOUGH_MEM);
+        return -NOT_ENOUGH_MEM;
     result->cr3_phys = cr3_phys;
     result->cr3 = (page_t)(cr3_phys | KERNEL_MEMORY_MASK);
     memset(result->cr3, 0, PAGE_SIZE);
@@ -36,11 +38,13 @@ intptr_t fork(Task* task, Task* result, void* frame) {
         MemoryRegion* region = memlist->region;
         MemoryRegion* nreg = memregion_clone(region, task->cr3, result->cr3);
         if(!nreg) 
-            return_defer_err(-NOT_ENOUGH_MEM);
+            // return_defer_err(-NOT_ENOUGH_MEM);
+            return -NOT_ENOUGH_MEM;
         MemoryList* nlist = memlist_new(region);
         if(!nlist) {
             memregion_drop(region, result->cr3);
-            return_defer_err(-NOT_ENOUGH_MEM);
+            // return_defer_err(-NOT_ENOUGH_MEM);
+            return -NOT_ENOUGH_MEM;
         }
         memlist_add(&result->memlist, nlist);
         list = list->next;
@@ -58,12 +62,11 @@ intptr_t fork(Task* task, Task* result, void* frame) {
         list_insert(&result->list, &processor->scheduler.queue);
         enable_interrupts();
     } else {
-        mutex_lock(&processor->scheduler.queue_mutex);
+        spinlock_lock(&kernel.load_balancer_lock);
         list_insert(&result->list, &processor->scheduler.queue);
-        mutex_unlock(&processor->scheduler.queue_mutex);
+        spinlock_unlock(&kernel.load_balancer_lock);
     }
     return result->process->id;
-DEFER_ERR:
     if(result) drop_task(result);
     return e;
 }
@@ -73,25 +76,30 @@ intptr_t exec_new(const char* path, Args* args, Args* env) {
     Task* task = NULL;
     if(!process) return -LIMITS; // Reached max tasks and/or we're out of memory
     process->resources = new_resource_block();
-    if(!process->resources) return_defer_err(-NOT_ENOUGH_MEM);
+    // if(!process->resources) return_defer_err(-NOT_ENOUGH_MEM);
+    if(!process->resources) return -NOT_ENOUGH_MEM;
     task = kernel_task_add();
-    if(!task) return_defer_err(-LIMITS); // Reached max tasks and/or we're out of memory
-    if((e=fetch_inode(&kernel.rootBlock, kernel.rootBlock.root, &process->curdir_inode)) < 0) return_defer_err(e); 
+    // if(!task) return_defer_err(-LIMITS);
+    if(!task) return -LIMITS; // Reached max tasks and/or we're out of memory
+    // if((e=fetch_inode(&kernel.rootBlock, kernel.rootBlock.root, &process->curdir_inode)) < 0) return_defer_err(e); 
+    if((e=fetch_inode(&kernel.rootBlock, kernel.rootBlock.root, &process->curdir_inode)) < 0) return e; 
     process->main_thread = task;
     
     task->process = process;
     process->curdir = kernel_malloc(PATH_MAX);
     if(!process->curdir)
-        return_defer_err(-NOT_ENOUGH_MEM);
+        return -NOT_ENOUGH_MEM;
+        // return_defer_err(-NOT_ENOUGH_MEM);
     process->curdir[0] = '/';
     process->curdir[1] = '\0';
     Path p;
     if((e=parse_abs(path, &p)) < 0)
-        return_defer_err(e);
+        // return_defer_err(e);
+        return e;
     if((e=exec(task, &p, args, env)) < 0)
-        return_defer_err(e);
+        // return_defer_err(e);
+        return e;
     return process->id;
-DEFER_ERR:
     if(task) drop_task(task);
     if(process) process_drop(process);
     return e;
@@ -267,40 +275,49 @@ intptr_t exec(Task* task, Path* path, Args* args, Args* envs) {
     paddr_t cr3_phys; 
     if(!(cr3_phys = kernel_page_alloc())) {
         return_defer_err(-NOT_ENOUGH_MEM);
+        return -NOT_ENOUGH_MEM;
     }
     task->cr3_phys = cr3_phys;
     task->cr3 = (page_t)(cr3_phys | KERNEL_MEMORY_MASK);
     memset(task->cr3, 0, PAGE_SIZE);
 
-    if((e=vfs_find(path, &file)) < 0) return_defer_err(e);
-    if((e=load_elf(task, file, 0, &header, &pheaders, false)) < 0) return_defer_err(e);
+    // if((e=vfs_find(path, &file)) < 0) return_defer_err(e);
+    if((e=vfs_find(path, &file)) < 0) return e;
+    // if((e=load_elf(task, file, 0, &header, &pheaders, false)) < 0) return_defer_err(e);
+    if((e=load_elf(task, file, 0, &header, &pheaders, false)) < 0) return e;
     
     size_t stack_pages = USER_STACK_PAGES + 1 + (PAGE_ALIGN_UP(args->bytelen+envs->bytelen) / PAGE_SIZE);
 
     if(!(ustack_region=memlist_new(memregion_new(KERNEL_PFLAG_WRITE | KERNEL_PFLAG_PRESENT | KERNEL_PFLAG_USER | KERNEL_PFLAG_EXEC_DISABLE | KERNEL_PTYPE_USER, USER_STACK_ADDR, stack_pages)))) 
-        return_defer_err(-NOT_ENOUGH_MEM);
+        // return_defer_err(-NOT_ENOUGH_MEM);
+        return -NOT_ENOUGH_MEM;
     
 
     if (!page_alloc(task->cr3, USER_STACK_ADDR, stack_pages, KERNEL_PFLAG_WRITE | KERNEL_PFLAG_PRESENT | KERNEL_PFLAG_USER | KERNEL_PFLAG_EXEC_DISABLE | KERNEL_PTYPE_USER))  
-        return_defer_err(-NOT_ENOUGH_MEM);
+        // return_defer_err(-NOT_ENOUGH_MEM);
+        return -NOT_ENOUGH_MEM;
     memlist_add(&task->memlist, ustack_region);
     
     if(!(kstack_region=memlist_new(memregion_new(KERNEL_PFLAG_WRITE | KERNEL_PFLAG_PRESENT | KERNEL_PFLAG_EXEC_DISABLE | KERNEL_PTYPE_USER, KERNEL_STACK_ADDR, KERNEL_STACK_PAGES))))
-        return_defer_err(-NOT_ENOUGH_MEM);
+        // return_defer_err(-NOT_ENOUGH_MEM);
+        return -NOT_ENOUGH_MEM;
     
     memlist_add(&task->memlist, kstack_region);
     // NOTE: If you're wondering why KERNEL_PTYPE_USER is applied here. The USER program OWNS that memory
     if (!page_alloc(task->cr3, KERNEL_STACK_ADDR, KERNEL_STACK_PAGES, KERNEL_PFLAG_WRITE | KERNEL_PFLAG_PRESENT | KERNEL_PFLAG_EXEC_DISABLE | KERNEL_PTYPE_USER))
-        return_defer_err(-NOT_ENOUGH_MEM);
+        // return_defer_err(-NOT_ENOUGH_MEM);
+        return -NOT_ENOUGH_MEM;
 
     char* stack_head = (char*)USER_STACK_PTR;
     char** envp;
     if((e=args_push(task, envs, &stack_head, &envp)) < 0) 
-        return_defer_err(e);
+        // return_defer_err(e);
+        return e;
     stack_head = (char*)(((((uintptr_t)stack_head))/16)*16);
     char** argv;
     if((e=args_push(task, args, &stack_head, &argv)) < 0) 
-        return_defer_err(e);
+        // return_defer_err(e);
+        return e;
     stack_head = (char*)(((((uintptr_t)stack_head))/16)*16);
     void* frame = (void*)(virt_to_phys(task->cr3, KERNEL_STACK_PTR) | KERNEL_MEMORY_MASK);
     task->rsp = (void*)(KERNEL_STACK_PTR - (frame - setup_user_first_exec(frame, header.entry, (uintptr_t)stack_head, args->argc, (uintptr_t)argv, (uintptr_t)envp)));
@@ -317,9 +334,9 @@ intptr_t exec(Task* task, Path* path, Args* args, Args* envs) {
         list_insert(&task->list, &processor->scheduler.queue);
         enable_interrupts();
     } else {
-        mutex_lock(&processor->scheduler.queue_mutex);
+        spinlock_lock(&kernel.load_balancer_lock);
         list_insert(&task->list, &processor->scheduler.queue);
-        mutex_unlock(&processor->scheduler.queue_mutex);
+        spinlock_unlock(&kernel.load_balancer_lock);
     }
     return 0;
 DEFER_ERR:

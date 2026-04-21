@@ -39,7 +39,7 @@ void ap_main(struct limine_smp_info* info) {
     asm volatile( "int $0x20" );
 }
 
-#define MAX_CPUS 16
+#define MAX_CPUS 32
 static uint8_t kernel_ap_stacks[MAX_CPUS][AP_STACK_SIZE] __attribute__((aligned(PAGE_SIZE)));
 
 void init_smp(void) {

@@ -230,7 +230,7 @@ int main(int argc, char** argv) {
         if(!nob_cmd_run_sync_and_reset(&cmd)) return 1;
 
         // Stripping kernel highly recudes size!
-        cmd_append(&cmd, "strip", "--strip-all", kernel);
+        cmd_append(&cmd, "strip", "-s", kernel);
         if(!nob_cmd_run_sync_and_reset(&cmd)) return 1;
     }
     const char* iso_files[] = {

@@ -8,7 +8,7 @@ void mouse_event_queue_push(MouseEventQueue* queue, const MouseEvent key) {
     queue->head &= queue->mask;
     size_t at = queue->head++;
     if((queue->head & queue->mask) == queue->tail) {
-        kpanic("Mouse Event queue overflow!");
+        kwarn("Mouse Event queue overflow!");
     }
     queue->addr[at] = key;
 }

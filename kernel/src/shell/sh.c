@@ -9,23 +9,23 @@
 #define KBD_DATA 0x60
 #define KBD_STATUS 0x64
 
-static bool shift = false;
+bool shift = false;
 
-static char keymap[128] = {
+char keymap[128] = {
     0, 27,'1','2','3','4','5','6','7','8','9','0','-','=','\b','\t',
     'q','w','e','r','t','y','u','i','o','p','[',']','\n',0,
     'a','s','d','f','g','h','j','k','l',';','\'','`',0,'\\',
     'z','x','c','v','b','n','m',',','.','/',0,'*',0,' ',
 };
 
-static char keymap_shift[128] = {
+char keymap_shift[128] = {
     0, 27,'!','@','#','$','%','^','&','*','(',')','_','+','\b','\t',
     'Q','W','E','R','T','Y','U','I','O','P','{','}','\n',0,
     'A','S','D','F','G','H','J','K','L',':','"','~',0,'|',
     'Z','X','C','V','B','N','M','<','>','?',0,'*',0,' ',
 };
 
-static char kbd_getchar() {
+char kbd_getchar() {
     while (!(inb(KBD_STATUS) & 1));
 
     uint8_t sc = inb(KBD_DATA);
@@ -50,10 +50,10 @@ static char kbd_getchar() {
 
 // ------------------- SHELL CORE -------------------
 
-static char buffer[SHELL_BUFFER_SIZE];
-static int index = 0;
+char buffer[SHELL_BUFFER_SIZE];
+int index = 0;
 
-static void shell_getline() {
+void shell_getline() {
     index = 0;
 
     while (1) {
@@ -83,7 +83,7 @@ static void shell_getline() {
 
 // ------------------- PARSER -------------------
 
-static int parse(char* input, char** argv) {
+int parse(char* input, char** argv) {
     int argc = 0;
 
     while (*input && argc < SHELL_MAX_ARGS) {
@@ -106,28 +106,35 @@ static int parse(char* input, char** argv) {
 
 // ------------------- COMMANDS -------------------
 
-static void cmd_echo(int argc, char** argv) {
+void cmd_echo(int argc, char** argv) {
     for (int i = 1; i < argc; i++) {
         printk("%s ", argv[i]);
     }
     printk("\n");
 }
 
-static void cmd_clear() {
+void cmd_clear() {
     kclear(0x000000);
 }
 
-static void cmd_help() {
+void cmd_exit() {
+    printk("\n[LKSH] Exited.\n");
+    printk("[LKSH] System halted!\n");
+    kabort();
+}
+
+void cmd_help() {
     printk("commands:\n");
-    printk("  help\n");
-    printk("  clear\n");
-    printk("  echo\n");
+    printk("  help - show this help\n");
+    printk("  clear - clear screen\n");
+    printk("  echo - echo an text\n");
+    printk("  exit - exit and halt system\n");
 }
 
 
 // ------------------- EXEC -------------------
 
-static void execute(int argc, char** argv) {
+void execute(int argc, char** argv) {
     if (argc == 0) return;
 
     if (!argv[0]) return;
@@ -135,6 +142,7 @@ static void execute(int argc, char** argv) {
     if (!__builtin_strcmp(argv[0], "help")) cmd_help();
     else if (!__builtin_strcmp(argv[0], "clear")) cmd_clear();
     else if (!__builtin_strcmp(argv[0], "echo")) cmd_echo(argc, argv);
+    else if (!__builtin_strcmp(argv[0], "exit")) cmd_exit();
     else printk("unknown: %s\n", argv[0]);
 }
 
@@ -143,7 +151,7 @@ static void execute(int argc, char** argv) {
 void kernel_shell_run(void) {
     char* argv[SHELL_MAX_ARGS];
 
-    printk("LavaOS kernel shell\n");
+    printk("Welcome to LKSH! Lavaos Kernel SHell.\n");
 
     while (1) {
         printk("> ");

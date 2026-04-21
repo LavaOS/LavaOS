@@ -4,6 +4,7 @@
 #include "fbwriter.h"
 #include "serial.h"
 #include "log.h"
+#include "term/fb/fb.h"
 #include <stdarg.h>
 #include <stdint.h>
 #include <stdbool.h>
@@ -13,8 +14,8 @@
 static int printk_x = 0;
 static int printk_y = 0;
 
-static uint32_t printk_fg = 0xC0C0C0;
-static uint32_t printk_bg = 0x000000;
+static uint32_t printk_fg = VGA_FG;
+static uint32_t printk_bg = VGA_BG;
 
 static void fb_put_char(FbTextWriter *w, char c) {
     char s[2] = { c, 0 };

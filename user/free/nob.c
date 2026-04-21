@@ -30,6 +30,8 @@ int main(int argc, char **argv) {
         cmd_append(&cmd, "-lsize");
         cmd_append(&cmd, "-I../libsize/include");
         da_append_many(&cmd, sources, ARRAY_LEN(sources));
+        nob_cmd_run_sync_and_reset(&cmd);
+        cmd_append(&cmd, "strip", "-s", output);
         if(!nob_cmd_run_sync_and_reset(&cmd)) return 1;
     }
     char* rootdir = getenv("ROOTDIR");

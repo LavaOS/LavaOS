@@ -13,6 +13,7 @@ struct Logger;
 typedef struct Cache Cache;
 typedef struct Task Task;
 #include <sync/mutex.h>
+#include <sync/spinlock.h>
 typedef struct {
     Bitmap map;
     Mutex map_lock;
@@ -54,7 +55,6 @@ typedef struct {
     size_t max_processor_id;
     // Round robin style load balancer
     atomic_size_t load_balancer_head;
+    Spinlock load_balancer_lock;
 } Kernel;
 extern Kernel kernel;
-
-

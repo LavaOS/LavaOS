@@ -1,7 +1,6 @@
 #include "minos.h"
 #include <minos/stat.h>
 #include <assert.h>
-#include <mem/slab.h>
 #include <minos/status.h>
 #include <fs/tmpfs/tmpfs.h>
 #include "log.h"
@@ -48,7 +47,9 @@ void minos_data_free(MinOSData* dp) {
     dp->cap = 0;
     dp->len = 0;
 }
-static Cache* minos_socket_cache = NULL;
+
+Cache* minos_socket_cache = NULL;
+
 void minos_socket_init_cache(void) {
     assert(minos_socket_cache = create_new_cache(sizeof(MinOSSocket), "MinOSSocket"));
 }

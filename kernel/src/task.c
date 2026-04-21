@@ -44,11 +44,21 @@ Task* kernel_task_add() {
     mutex_unlock(&kernel.tasks_mutex);
     return task;
 }
+
 void drop_task(Task* task) {
-    if(task) {
-        list_remove(&task->list);
-        cache_dealloc(kernel.task_cache, task);
+    if(!task) return;
+    
+    mutex_lock(&kernel.tasks_mutex);
+    
+    if(task->id < kernel.tasks.len && kernel.tasks.items[task->id] == task) {
+        kernel.tasks.items[task->id] = NULL;
     }
+    
+    list_remove(&task->list);
+    list_remove(&task->memlist);
+    
+    cache_dealloc(kernel.task_cache, task);   
+    mutex_unlock(&kernel.tasks_mutex);
 }
 
 Task* current_task(void) {
