@@ -32,6 +32,9 @@ int main(int argc, char **argv) {
         cmd_append(&cmd, temp_sprintf("-L%s/bin/libpluto", minos_root));
         cmd_append(&cmd, "-lpluto");
         cmd_append(&cmd, "-I../libpluto/include");
+        cmd_append(&cmd, temp_sprintf("-L%s/bin/librender", minos_root));
+        cmd_append(&cmd, "-lrender");
+        cmd_append(&cmd, "-I../librender/include");
         da_append_many(&cmd, sources, ARRAY_LEN(sources));
         if(!nob_cmd_run_sync_and_reset(&cmd)) return 1;
     }

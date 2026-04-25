@@ -14,6 +14,7 @@ const char* projects[] = {
     "clear",
     "libwm",
     "libpluto",
+    "librender",
     "lash",
     "MinSDL",
     "cat",
