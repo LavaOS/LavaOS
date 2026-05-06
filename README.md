@@ -13,14 +13,9 @@
 ### ⚠️ Visit our website:
 https://lavaos.github.io/getlavaos/
 
-## ⚠️ Important announcement
-The ISO files were removed from GitHub and uploaded to the MEGA platform.
-MEGA folder link: https://mega.nz/folder/bQEhmZqb#LN9cA3Qu-dyBoR8jMR_9zQ
-Nightly branch: https://mega.nz/folder/WAVDzAAR#0A-jnREK9e3MMW2p7oHgDA
+# 🔥 LavaOS
 
 ![banner](banner.png)
-
-# 🔥 LavaOS
 
 **LavaOS** is a free and open-source Unix-like operating system, forked from [MinOS](https://github.com/Dcraftbg/MinOS).  
 It aims to be minimalist, hackable, and blazing fast — powered by a custom bootstrapping compiler (`nob.c`) and a raw, low-level design.
@@ -68,6 +63,10 @@ gcc nob.c -o nob
 The first run will compile a full custom GCC toolchain inside your environment.
 Make sure you have enough RAM + swap (recommendation: at least 4GiB RAM + 8GiB swap) to avoid out-of-memory errors.
 Building may temporarily consume 1–10 GiB of space depending on your setup.
+
+## ⭐ Stars
+
+[![Star History Chart](https://api.star-history.com/svg?repos=LavaOS/LavaOS&type=Date)](https://star-history.com/#LavaOS/LavaOS&Date)
 
 ## 🤝 Contributing
 
