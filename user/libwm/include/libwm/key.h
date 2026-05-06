@@ -4,3 +4,5 @@
 
 #define WM_SETKEY(event, key)      ((event)->arg0 = (key))
 #define WM_SETKEYCODE(event, code) ((event)->arg1 = (code))
+
+#define WM_KEY_CLOSE  0xFFFF  // Virtual close key

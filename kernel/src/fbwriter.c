@@ -1,7 +1,5 @@
 #include "fbwriter.h"
-// #include "fonts/zap-light16.h"
-// New font :)
-#include "fonts/tosh-sat16.h"
+#include "fonts/iso-f16.h"
 
 intptr_t fb_draw_codepoint_at(Framebuffer* fm, size_t x, size_t y, int codepoint, uint32_t fg, uint32_t bg) {
     if(codepoint > 127) return -UNSUPPORTED; // Unsupported

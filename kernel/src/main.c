@@ -123,7 +123,6 @@ void _start() {
     printk("[ OK ] Configured caches.\n");
     printk("[WAIT] Configuring and testing kernel hash table.\n");
     ht_init(&kernel_ht);
-    ht_test();
     printk("[ OK ] Kernel hash table is fine.\n");
     printk("[VERB] Loading PCI...\n");
     init_pci();

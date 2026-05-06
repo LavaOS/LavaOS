@@ -131,6 +131,8 @@ typedef struct {
     // Menu:
     uint32_t menu_color;
     uint32_t menu_height;
+
+    int running;
 } Window;
 typedef struct {
     Window **items;
@@ -231,6 +233,7 @@ static Image cursor    = { 0 };
 static Image icon_x    = { 0 }, icon_x_hover    = { 0 },
              icon_min  = { 0 }, icon_min_hover  = { 0 },
              icon_hide = { 0 }, icon_hide_hover = { 0 };
+static Image wallpaper_img = { 0 };
 
 // (per user? per workspace?) state 
 static Window* moving_window = NULL;
@@ -255,7 +258,21 @@ static bool collides_cursor(const Rectangle* rect) {
 }
 // Components of the screen
 static void wallpaper_redraw_region(const Framebuffer* fb, const Rectangle* rect) {
-    fill_rect(fb, rect, 0x6666); // Windows 95 light blue background :O
+    if(wallpaper_img.pixels) {
+        // Stretch wallpaper to screen size
+        for(size_t y = rect->t; y < rect->b; y++) {
+            size_t src_y = (y * wallpaper_img.height) / fb->height;
+            uint32_t* src_row = (uint32_t*)((uint8_t*)wallpaper_img.pixels + src_y * wallpaper_img.pitch_bytes);
+            uint32_t* dst_row = (uint32_t*)((uint8_t*)fb->pixels + y * fb->pitch_bytes);
+            
+            for(size_t x = rect->l; x < rect->r; x++) {
+                size_t src_x = (x * wallpaper_img.width) / fb->width;
+                dst_row[x] = src_row[src_x];
+            }
+        }
+    } else {
+        fill_rect(fb, rect, 0x000000);
+    }
 }
 // Window:
 enum {
@@ -392,23 +409,34 @@ static void window_redraw_region(const Framebuffer* fb, const Window* win, const
         menu_redraw_region(fb, win, &area);
     }
 }
+
 static void redraw_region(const Framebuffer* fb, const Rectangle* rect) {
-    if(rect->l == rect->r || rect->b == rect->t) return;
-    wallpaper_redraw_region(fb, rect);
+    // Clip to framebuffer
+    Rectangle clipped = *rect;
+    if(clipped.l > fb->width) clipped.l = fb->width;
+    if(clipped.t > fb->height) clipped.t = fb->height;
+    if(clipped.r > fb->width) clipped.r = fb->width;
+    if(clipped.b > fb->height) clipped.b = fb->height;
+    if(clipped.l == clipped.r || clipped.b == clipped.t) return;
+    
+    // Check if any window covers this region
     for(struct list_head* head = windows.next; head != &windows; head = head->next) {
         const Window* win = (Window*)head;
-        if(rect_collides(rect, &win->rect)) {
-            Rectangle area = rect_collision_rect(rect, &win->rect);
-            if(area.l != rect->l) redraw_region(fb, &(Rectangle){rect->l, rect->t,  area.l, rect->b});
-            if(area.r != rect->r) redraw_region(fb, &(Rectangle){ area.r, rect->t, rect->r, rect->b});
-            if(area.t != rect->t) redraw_region(fb, &(Rectangle){rect->l, rect->t, rect->r,  area.t});
-            if(area.b != rect->b) redraw_region(fb, &(Rectangle){rect->l,  area.b, rect->r, rect->b});
+        if(rect_collides(&clipped, &win->rect)) {
+            Rectangle area = rect_collision_rect(&clipped, &win->rect);
+            
+            if(area.l != clipped.l) redraw_region(fb, &(Rectangle){clipped.l, clipped.t, area.l, clipped.b});
+            if(area.r != clipped.r) redraw_region(fb, &(Rectangle){area.r, clipped.t, clipped.r, clipped.b});
+            if(area.t != clipped.t) redraw_region(fb, &(Rectangle){clipped.l, clipped.t, clipped.r, area.t});
+            if(area.b != clipped.b) redraw_region(fb, &(Rectangle){clipped.l, area.b, clipped.r, clipped.b});
+            
             window_redraw_region(fb, win, &area);
             return;
         }
     }
+    
+    wallpaper_redraw_region(fb, &clipped);
 }
-
 
 static void draw_window(const Framebuffer* fb, const Window* win) {
     window_redraw_region(fb, win, &win->rect);
@@ -416,22 +444,32 @@ static void draw_window(const Framebuffer* fb, const Window* win) {
 static void move_window(const Framebuffer* fb, Window* win, size_t x, size_t y) {
     size_t w = win->rect.r - win->rect.l;
     size_t h = win->rect.b - win->rect.t;
+    
+    // Strict clamping - NEVER go off-screen
+    if(x > fb->width - w) x = fb->width - w;
+    if(y > fb->height - h) y = fb->height - h;
+    if((int)x < 0) x = 0;  // cast to int for comparison
+    if((int)y < 0) y = 0;
+    
     Rectangle old_rect = win->rect;
     win->rect.r = (win->rect.l = x) + w;
     win->rect.b = (win->rect.t = y) + h;
+    
     if(rect_collides(&old_rect, &win->rect)) {
         Rectangle area = rect_collision_rect(&old_rect, &win->rect);
-        if(area.l != old_rect.l) redraw_region(fb, &(Rectangle){old_rect.l, old_rect.t,     area.l, old_rect.b});
-        if(area.r != old_rect.r) redraw_region(fb, &(Rectangle){    area.r, old_rect.t, old_rect.r, old_rect.b});
-        if(area.t != old_rect.t) redraw_region(fb, &(Rectangle){old_rect.l, old_rect.t, old_rect.r,     area.t});
-        if(area.b != old_rect.b) redraw_region(fb, &(Rectangle){old_rect.l,     area.b, old_rect.r, old_rect.b});
-    } else redraw_region(fb, &old_rect);
+        if(area.l != old_rect.l) redraw_region(fb, &(Rectangle){old_rect.l, old_rect.t, area.l, old_rect.b});
+        if(area.r != old_rect.r) redraw_region(fb, &(Rectangle){area.r, old_rect.t, old_rect.r, old_rect.b});
+        if(area.t != old_rect.t) redraw_region(fb, &(Rectangle){old_rect.l, old_rect.t, old_rect.r, area.t});
+        if(area.b != old_rect.b) redraw_region(fb, &(Rectangle){old_rect.l, area.b, old_rect.r, old_rect.b});
+    } else {
+        redraw_region(fb, &old_rect);
+    }
     redraw_region(fb, &win->rect);
 }
 static void load_image_required(const char* path, Image* image) {
     if(!load_image(path, image)) exit(1);
 }
-static void load_icons(void) {
+static void load_resources(void) {
     load_image_required("./res/cursor.png", &cursor);
     load_image_required("./res/X_nohover.png", &icon_x);
     load_image_required("./res/X_hover.png", &icon_x_hover);
@@ -439,6 +477,7 @@ static void load_icons(void) {
     load_image_required("./res/Min_hover.png", &icon_min_hover);
     load_image_required("./res/Hide_nohover.png", &icon_hide);
     load_image_required("./res/Hide_hover.png", &icon_hide_hover);
+    load_image_required("./res/wallpaper.png", &wallpaper_img);
 }
 static intptr_t load_framebuffer(const char* path, Framebuffer* fb) {
     intptr_t e = open(path, O_WRONLY);
@@ -593,9 +632,10 @@ void client_thread(void* client_void) {
             if(info.x == (uint32_t)-1) info.x = 100;
             if(info.y == (uint32_t)-1) info.y = 100;
 
-            window->border_thick = 1;
-            window->menu_color = 0xFF888888;
-            window->menu_height = 14;
+            window->border_thick = 2;
+            window->border_color = 0xC0C0C0;
+            window->menu_color = 0xC0C0C0;
+            window->menu_height = 16;
 
             window->rect.l = info.x;
             window->rect.t = info.y;
@@ -760,7 +800,6 @@ void client_thread(void* client_void) {
             }
             // TODO: don't redraw entire window content.
             redraw_region(&fb0, &window->rect);
-            draw_image(&fb0, &cursor, mouse_x, mouse_y);
             flush_framebuffer(&fb0);
             send_response_packet(client->fd, 0);
         } break;
@@ -870,20 +909,22 @@ enum {
 void handle_mouse_event(int what, int x, int y, int button) {
     switch(what) {
     case GUI_MOUSE_EVENT_MOVE: {
-        Rectangle rect;
-        rect = cursor_rect();
+        Rectangle rect = cursor_rect();
         mouse_x = x;
         mouse_y = y;
         if(moving_window) {
             int wx = mouse_x - moving_window_dx, wy = mouse_y - moving_window_dy;
             if(wx < 0) wx = 0;
             if(wy < 0) wy = 0;
+            if((size_t)wx + (moving_window->rect.r - moving_window->rect.l) > fb0.width)
+                wx = fb0.width - (moving_window->rect.r - moving_window->rect.l);
+            if((size_t)wy + (moving_window->rect.b - moving_window->rect.t) > fb0.height)
+                wy = fb0.height - (moving_window->rect.b - moving_window->rect.t);
             move_window(&fb0, moving_window, wx, wy);
-            mouse_x = wx + moving_window_dx;
-            mouse_y = wy + moving_window_dy;
-        } 
+        }
         redraw_region(&fb0, &rect);
         draw_image(&fb0, &cursor, mouse_x, mouse_y);
+        flush_framebuffer(&fb0);
     } break;
     case GUI_MOUSE_EVENT_UP:
         if(button == MOUSE_BUTTON_CODE_LEFT) {
@@ -906,12 +947,24 @@ void handle_mouse_event(int what, int x, int y, int button) {
                               hide_button = menu_get_hide_rect(win),
                               min_button  = menu_get_min_rect(win);
                     if(rect_collide_point(&x_button, &cursorp)) {
-                        // TODO: send close window event
                         Rectangle rect = win->rect;
+    
+                        // Send close signal as a key event
+                        WmEvent event = { 0 };
+                        event.window = win->child_index;
+                        event.event = WM_EVENT_KEY_DOWN;
+                        WM_SETKEY(&event, WM_KEY_CLOSE);
+                        WM_SETKEYCODE(&event, 0);
+                        send_event(win->parent_client->fd, &event);
+    
+                        // Wait a bit for app to process
+                        for(volatile int i = 0; i < 100000; i++) {}
+    
                         list_remove(&win->list);
                         free(win);
                         redraw_region(&fb0, &rect);
                         draw_image(&fb0, &cursor, mouse_x, mouse_y);
+                        flush_framebuffer(&fb0);
                         info("Close");
                         return;
                     } else if (rect_collide_point(&min_button, &cursorp)) {
@@ -924,6 +977,12 @@ void handle_mouse_event(int what, int x, int y, int button) {
                             moving_window_dx = cursorp.x - win->rect.l;
                             moving_window_dy = cursorp.y - win->rect.t;
                             info("Move");
+                            list_remove(&win->list);
+                            list_append(&windows, &win->list);
+                            draw_window(&fb0, win);
+                            draw_image(&fb0, &cursor, mouse_x, mouse_y);
+                            flush_framebuffer(&fb0);
+                            return;
                         }
                     }
                 }
@@ -931,7 +990,7 @@ void handle_mouse_event(int what, int x, int y, int button) {
                 list_append(&windows, &win->list);
                 // TODO: Optimise this to not redraw the entire window.
                 draw_window(&fb0, win);
-                draw_image(&fb0, &cursor, mouse_x, mouse_y);
+                flush_framebuffer(&fb0);
                 return;
             }
         }
@@ -960,11 +1019,26 @@ void mouse_thread(void*) {
                 x += ev->as.move.delta_x;
                 y += ev->as.move.delta_y;
                 if(x < 0) x = 0;
-                else if (((size_t)x) + 10 > fb0.width) x = fb0.width-10;
+                else if ((size_t)x + cursor.width > fb0.width) x = fb0.width - cursor.width;
                 if(y < 0) y = 0;
-                else if (((size_t)y) + 10 > fb0.height) y = fb0.height-10;
-                handle_mouse_event(GUI_MOUSE_EVENT_MOVE, x, y, -1);
-                break;
+                else if ((size_t)y + cursor.height > fb0.height) y = fb0.height - cursor.height;    
+                Rectangle old_cursor = cursor_rect();
+                mouse_x = x;
+                mouse_y = y;
+                if(moving_window) {
+                    int wx = x - moving_window_dx;
+                    int wy = y - moving_window_dy;
+                    if(wx < 0) wx = 0;
+                    if(wy < 0) wy = 0;
+                    if((size_t)wx + (moving_window->rect.r - moving_window->rect.l) > fb0.width)
+                        wx = fb0.width - (moving_window->rect.r - moving_window->rect.l);
+                    if((size_t)wy + (moving_window->rect.b - moving_window->rect.t) > fb0.height)
+                        wy = fb0.height - (moving_window->rect.b - moving_window->rect.t);
+                    move_window(&fb0, moving_window, wx, wy);
+                }
+                redraw_region(&fb0, &old_cursor);
+                draw_image(&fb0, &cursor, mouse_x, mouse_y);
+                flush_framebuffer(&fb0);
             } break;
             case MOUSE_EVENT_KIND_BUTTON:
                 handle_mouse_event(ev->as.button & MOUSE_BUTTON_ON_MASK ? GUI_MOUSE_EVENT_DOWN : GUI_MOUSE_EVENT_UP, -1, -1, ev->as.button & MOUSE_BUTTON_CODE_MASK);
@@ -1087,7 +1161,7 @@ int main(void) {
     list_init(&windows);
     list_init(&clients);
     trace("Loading resources");
-    load_icons();
+    load_resources();
     trace("Loading framebuffer");
     if((e=load_framebuffer("/devices/fb0", &fb0)) < 0) {
         error("load_framebuffer failed: %s", status_str(e));
@@ -1098,7 +1172,6 @@ int main(void) {
         fb0.width, fb0.height
     };
     wallpaper_redraw_region(&fb0, &rect);
-    draw_image(&fb0, &cursor, mouse_x, mouse_y);
     flush_framebuffer(&fb0);
     gtgo(keyboard_thread, NULL);
     gtgo(mouse_thread, NULL);

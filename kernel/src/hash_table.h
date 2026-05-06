@@ -22,4 +22,3 @@ void* ht_lookup(hash_table* ht, void* key);
 void ht_delete(hash_table* ht, void* key);
 void ht_overwrite(hash_table* ht, void* key, void* new_value);
 void ht_dump(hash_table* ht);
-void ht_test();

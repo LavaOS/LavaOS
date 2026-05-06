@@ -7,3 +7,6 @@
 [submodule "user/lash"]
 	path = user/lash
 	url = https://github.com/LavaOS/lash
+[submodule "user/tree"]
+	path = user/tree
+	url = https://github.com/LavaOS/tree.git

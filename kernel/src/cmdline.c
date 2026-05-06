@@ -62,7 +62,7 @@ void deinit_cmdline() {
     for(size_t i = 0; i < MAX_PARAMS; i++) {
         if(cmdline_params[i].name) {
             if(cmdline_params[i].value)
-                kernel_free(cmdline_params[i].value, cmdline_params[i].size);
+                kernel_dealloc(cmdline_params[i].value, cmdline_params[i].size);
 
             cmdline_params[i].name = NULL;
             cmdline_params[i].value = NULL;

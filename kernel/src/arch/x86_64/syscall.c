@@ -2,6 +2,7 @@
 #include "../../port.h"
 #include "../../power.h"
 #include "../../shutdown.h"
+#include "../../shared_table.h"
 #include "../../sockets/minos.h"
 
 #include "syscall.h"
@@ -774,20 +775,19 @@ intptr_t sys_reboot() {
     powr_reboot();
     return 0;
 }
-intptr_t sys_realloc_caches() {
-    cache_dealloc(kernel.cache_cache, sys_realloc_caches);
-    cache_dealloc(kernel.inode_cache, sys_realloc_caches);
-    cache_dealloc(kernel.task_cache, sys_realloc_caches);
-    cache_dealloc(kernel.resource_cache, sys_realloc_caches);
-    cache_dealloc(kernel.memregion_cache, sys_realloc_caches);
-    cache_dealloc(kernel.memlist_cache, sys_realloc_caches);
-    cache_dealloc(kernel.process_cache, sys_realloc_caches);
-    cache_dealloc(kernel.allocation_cache, sys_realloc_caches);
-    cache_dealloc(kernel.heap_cache, sys_realloc_caches);
-    cache_dealloc(kernel.charqueue_cache, sys_realloc_caches);
-    cache_dealloc(kernel.pci_device_cache, sys_realloc_caches);
-    cache_dealloc(kernel.cache64, sys_realloc_caches);
-    cache_dealloc(kernel.cache256, sys_realloc_caches);
-    cache_dealloc(kernel.shared_memory_cache, sys_realloc_caches);
+intptr_t sys_stins(void* key, void* value) {
+    st_insert(key, value);
+    return 0;
+}
+intptr_t sys_stlup(void* key) {
+    st_lookup(key);
+    return 0;
+}
+intptr_t sys_stdel(void* key) {
+    st_delete(key);
+    return 0;
+}
+intptr_t sys_stowr(void* key, void* new_value) {
+    st_overwrite(key, new_value);
     return 0;
 }

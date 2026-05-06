@@ -32,5 +32,8 @@ enum {
     SYS_SYSCTL,
     SYS_SHUTDOWN,
     SYS_REBOOT,
-    SYS_REALLOC_CACHES,
+    SYS_STINS,
+    SYS_STLUP,
+    SYS_STDEL,
+    SYS_STOWR,
 };
