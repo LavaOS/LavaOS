@@ -1,8 +1,17 @@
 #include "multiplexer.h"
 // FIXME: Multiplexer cleanup logic.
 void multiplexer_add(Multiplexer* mp, Inode* inode) {
+    if(!mp || !inode) return;
     rwlock_begin_write(&mp->lock);
-    list_append(&inode->list, &mp->list);
+    
+    // Check if already in list (prevent double-add)
+    for(struct list *head = mp->list.next; head != &mp->list; head = head->next) {
+        if((Inode*)head == inode) {
+            rwlock_end_write(&mp->lock);
+            return;  // Already added
+        }
+    }   
+    list_append(&mp->list, &inode->list);
     rwlock_end_write(&mp->lock);
 }
 Multiplexer keyboard_mp = { 0 };
@@ -13,17 +22,17 @@ static intptr_t multiplexer_read(Inode* file, void* buf, size_t size, off_t offs
     size_t n = 0;
     intptr_t e;
     rwlock_begin_read(&mp->lock);
-    for(struct list *head = mp->list.next; head != &mp->list && n < size; head = head->next) {
+    for(struct list *head = mp->list.next; head != &mp->list && n < size;) {
         Inode* inode = (Inode*)head;
-        // TODO: Think about the error logic here.
-        // I don't know if this is the best as it kinda starves the devices down the chain so I don't really know
-        if((e=inode_read(inode, buf + n, size - n, 0)) < 0) {
+        head = head->next;  // Save next BEFORE reading (inode might be removed)   
+        if((e = inode_read(inode, buf + n, size - n, 0)) < 0) {
+            if(e == -WOULD_BLOCK) continue;
             rwlock_end_read(&mp->lock);
             if(n == 0) return e;
             return n;
         }
         n += (size_t)e;
-    }
+    }   
     rwlock_end_read(&mp->lock);
     return n;
 }
@@ -36,7 +45,7 @@ static bool multiplexer_is_readable(Inode* file) {
             rwlock_end_read(&mp->lock);
             return true;
         }
-    }
+    }   
     rwlock_end_read(&mp->lock);
     return false;
 }
@@ -50,17 +59,23 @@ intptr_t init_multiplexers(void) {
     list_init(&mouse_mp.list);
     rwlock_init(&mouse_mp.lock);
     Inode* keyboard = new_inode();
-    if(keyboard) {
-        keyboard->priv = &keyboard_mp;
-        keyboard->ops = &inodeOps;
-    }
+    if(!keyboard) return -NOT_ENOUGH_MEM;  // Check for failure
+    keyboard->priv = &keyboard_mp;
+    keyboard->ops = &inodeOps;
     Inode* mouse = new_inode();
-    if(mouse) {
-        mouse->priv = &mouse_mp;
-        mouse->ops = &inodeOps;
+    if(!mouse) {
+        idrop(keyboard);  // Cleanup
+        return -NOT_ENOUGH_MEM;
     }
+    mouse->priv = &mouse_mp;
+    mouse->ops = &inodeOps;
     intptr_t e;
-    if((e = vfs_register_device("keyboard", keyboard)) < 0) return e;
-    if((e = vfs_register_device("mouse", mouse)) < 0) return e;
+    if((e = vfs_register_device("keyboard", keyboard)) < 0) {
+        idrop(mouse);
+        return e;
+    }
+    if((e = vfs_register_device("mouse", mouse)) < 0) {
+        return e;
+    }
     return 0;
 }

@@ -114,14 +114,14 @@ intptr_t pci_scan(Pci* pci) {
                 if(vendor_id == 0xFFFF) continue;
                 PciDevice* device = pci_device_new();
                 if(!device) {
-                    printk("(pci) Not enough memory to create PCI device");
+                    printk("(pci) Not enough memory to create PCI device\n");
                     return -NOT_ENOUGH_MEM;
                 }
                 device->bus  = bus;
                 device->slot = slot;
                 device->func = func;
                 if(!pci_add(pci, device)) {
-                    printk("(pci) Failed to add device. Not enough memory");
+                    printk("(pci) Failed to add device. Not enough memory\n");
                     pci->busses[bus][slot][func] = NULL;
                     pci_device_destroy(device);
                     return -NOT_ENOUGH_MEM;
@@ -216,15 +216,15 @@ void init_pci() {
                 if(dev->subclass == 0x03) {
                     intptr_t e;
                     kinfo("usb (bus=%03d slot=%02d device=%d). (pi=0x%02X)", busi, sloti, devi, dev->prog_inferface);
-                    printk("usb (bus=%03d slot=%02d device=%d). (pi=0x%02X)", busi, sloti, devi, dev->prog_inferface);
+                    printk("usb (bus=%03d slot=%02d device=%d). (pi=0x%02X)\n", busi, sloti, devi, dev->prog_inferface);
                     if((e=pci_map_bar0(&dev->bar0, busi, sloti, devi)) < 0) {
-                        printk("(usb) Failed to map bar: %s", status_str(e));
-                        printk("(usb) Failed to map bar: %s", status_str(e));
+                        printk("(usb) Failed to map bar: %s\n", status_str(e));
+                        printk("(usb) Failed to map bar: %s\n", status_str(e));
                         continue;
                     }
                     if((e=init_usb(dev)) < 0) {
                         kwarn("usb Failed to initialise USB device: %s", status_str(e));
-                        printk("usb Failed to initialise USB device: %s", status_str(e));
+                        printk("usb Failed to initialise USB device: %s\n", status_str(e));
                         continue;
                     }
                 }

@@ -83,7 +83,7 @@ static bool key_extend(KeyState* keyboard, TtyScratch* scratch, uint16_t code) {
     }
     return true;
 }
-#define MAX_CSI_NUMS 5
+#define MAX_CSI_NUMS 128
 typedef struct {
     int nums[MAX_CSI_NUMS];
     size_t nums_count;

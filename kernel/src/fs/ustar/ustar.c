@@ -40,61 +40,87 @@ typedef struct {
 #define USTAR_MAGIC_OFF 257
 #define USTAR_DATA 512
 intptr_t ustar_unpack(const char* into, const char* ustar_data, size_t ustar_size) {
-    const char* ustar_end = ustar_data+ustar_size;
+    const char* ustar_end = ustar_data + ustar_size;
     intptr_t e;
     size_t into_len = strlen(into);
+    
     if(into_len >= PATH_MAX) return -LIMITS;
-    char* path = kernel_malloc(PATH_MAX);
-    if(!path) return -NOT_ENOUGH_MEM;
-    while(memcmp(ustar_data+USTAR_MAGIC_OFF, "ustar", 5)==0 && ustar_data < ustar_end) {
-        int size=octtoi(ustar_data+USTAR_FILESIZE_OFF, 11);
-        if(ustar_end-ustar_data < size) return -BUFFER_TOO_SMALL;
-        uint8_t type = *(((uint8_t*)ustar_data)+USTAR_TYPE_OFF);
-        size_t name_len=0;
+    
+    // Use stack allocation instead of malloc (safe for real HW)
+    char path[PATH_MAX];
+    
+    while(ustar_data < ustar_end) {
+        // Check if we have enough data for header (512 bytes)
+        if(ustar_end - ustar_data < 512) {
+            printk("[USTR] Not enough data for header\n");
+            return -BUFFER_TOO_SMALL;
+        }
+        
+        // Check magic
+        if(memcmp(ustar_data + USTAR_MAGIC_OFF, "ustar", 5) != 0) {
+            // Not a ustar entry - probably end of archive
+            break;
+        }
+        
+        int size = octtoi(ustar_data + USTAR_FILESIZE_OFF, 11);
+        if(size < 0) {
+            printk("[USTR] Invalid size in ustar header\n");
+            return -INVALID_PARAM;
+        }
+        
+        // Check if we have enough data for file content
+        if(ustar_end - ustar_data < 512 + size) {
+            printk("[USTR] Not enough data for file content (size=%d)\n", size);
+            return -BUFFER_TOO_SMALL;
+        }
+        
+        uint8_t type = *(((uint8_t*)ustar_data) + USTAR_TYPE_OFF);
+        size_t name_len = 0;
         const char* name = ustar_data;
+        
         if(memcmp(name, "./", 2) == 0) name += 2;
+        
         while(name[name_len] && name_len < 98) {
             name_len++;
         }
+        
         if(name_len == 98) return -INVALID_PATH;
-        if(name_len > 0 && name[name_len-1] == '/') name_len--;
-        if(into_len+name_len >= PATH_MAX) return -LIMITS; 
-        memcpy(path         , into, into_len);
-        memcpy(path+into_len, name, name_len);
-        path[into_len+name_len] = '\0';
-
+        if(name_len > 0 && name[name_len - 1] == '/') name_len--;
+        if(into_len + name_len >= PATH_MAX) return -LIMITS;
+        
+        memcpy(path, into, into_len);
+        memcpy(path + into_len, name, name_len);
+        path[into_len + name_len] = '\0';
+        
         ktrace("[USTR] %s of type %c size %zu", path, type, size);
+        
         if(type == '5') {
-            Inode* dir=NULL;
+            Inode* dir = NULL;
             if((e = vfs_creat_abs(path, O_DIRECTORY, &dir)) < 0) {
                 if(e != -ALREADY_EXISTS) {
                     printk("[USTR] Could not mkdir %s : %s\n", path, status_str(e));
-                    goto err; 
+                    return e;
                 }
             }
-            if(dir){
-                idrop(dir);
-            }
+            if(dir) idrop(dir);
         } else {
             Inode* file;
             if((e = vfs_creat_abs(path, 0, &file)) < 0) {
                 printk("[USTR] Could not create %s : %s\n", path, status_str(e));
-                goto err;
+                return e;
             }
-            if((e = write_exact(file, ustar_data+512, size, 0)) < 0) {
+            if((e = write_exact(file, ustar_data + 512, size, 0)) < 0) {
                 printk("[USTR] Could not write data: %s : %s\n", path, status_str(e));
                 idrop(file);
-                goto err;
+                return e;
             }
-            if(file){
-                idrop(file);
-            }
+            if(file) idrop(file);
         }
-        ustar_data += (((size+511)/512) + 1)*512;
+        
+        // Advance to next entry
+        size_t blocks = ((size + 511) / 512) + 1;
+        ustar_data += blocks * 512;
     }
-    kernel_dealloc(path, PATH_MAX);
+    
     return 0;
-err:
-    kernel_dealloc(path, PATH_MAX);
-    return e;
 }

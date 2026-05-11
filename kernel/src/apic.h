@@ -5,4 +5,5 @@ extern IntController apic_controller;
 uint32_t get_lapic_id(void);
 void enable_lapic_timer(void);
 void lapic_timer_reload(void);
+bool lapic_is_present(void);
 void init_apic();

@@ -226,14 +226,17 @@ void apic_set_mask(IntController* _, size_t irq, uint32_t on) {
     }
 }
 void lapic_timer_reload(void) {
-    lapic_write(lapic_addr, LAPIC_DIV_OFFSET    , 3);
+    lapic_write(lapic_addr, LAPIC_DIV_OFFSET, 3);
     lapic_write(lapic_addr, LAPIC_INITCNT_OFFSET, 0xFFFFFFFF);
-    lapic_write(lapic_addr, LAPIC_LVT_TIMER_OFFSET, LVT_TIMER_PERIODIC | LVT_MASK | LAPIC_TIMER_IRQ);
-    lapic_write(lapic_addr, LAPIC_INITCNT_OFFSET  , ticks);
+    lapic_write(lapic_addr, LAPIC_LVT_TIMER_OFFSET, LVT_TIMER_PERIODIC | LAPIC_TIMER_IRQ);
+    lapic_write(lapic_addr, LAPIC_INITCNT_OFFSET, ticks);
     lapic_write(lapic_addr, 0xF0, 0xFF | 0x100);
 }
 uint32_t get_lapic_id(void) {
     return lapic_read(lapic_addr, 0x20) >> 24;
+}
+bool lapic_is_present(void) {
+    return lapic_addr != NULL;
 }
 IntController apic_controller = {
     .reserve = apic_reserve,

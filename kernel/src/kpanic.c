@@ -2,7 +2,6 @@
 #include "serial.h"
 #include "log.h"
 #include "printk.h"
-#include "shell/sh.h"
 #include <stdarg.h>
 
 void kpanic(const char* fmt, ...) {
@@ -16,11 +15,11 @@ void kpanic(const char* fmt, ...) {
     printk_set_color(0xFF0000, 0x000000);
     printk("\n\n");
 
-    printk("  +--------------------------------------------+\n");
-    printk("  | LavaOS has encountered a critical problem. |\n");
-    printk("  | System will enter recovery mode.           |\n");
-    printk("  | Type 'help' for a list of commands.        |\n");
-    printk("  +--------------------------------------------+\n");
+    printk("  +-------------------------------------------+\n");
+    printk("  |                                           |\n");
+    printk("  | LavaOS has encountered a critical problem |\n");
+    printk("  |                                           |\n");
+    printk("  +-------------------------------------------+\n");
 
     printk("\n");
 
@@ -30,6 +29,5 @@ void kpanic(const char* fmt, ...) {
 
     printk_reset_color();
     va_end(args);
-    kernel_shell_run();
     kabort();
 }

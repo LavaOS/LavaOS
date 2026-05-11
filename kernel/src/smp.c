@@ -36,14 +36,20 @@ void ap_main(struct limine_smp_info* info) {
     lapic_timer_reload();
     irq_clear(kernel.task_switch_irq);
     enable_interrupts();
-    asm volatile( "int $0x20" );
+    __asm__ volatile("sti; nop; nop");
 }
 
-#define MAX_CPUS 32
+#define MAX_CPUS 1024
 static uint8_t kernel_ap_stacks[MAX_CPUS][AP_STACK_SIZE] __attribute__((aligned(PAGE_SIZE)));
 
 void init_smp(void) {
     if(!limine_smp_request.response) return;
+
+    if(!lapic_is_present()) {
+        printk("[FAIL] LAPIC not detected, SMP disabled.\n");
+        return;
+    }
+
     size_t cpu_count = limine_smp_request.response->cpu_count;
     // TODO: Allow unlimited CPU cores
     if(cpu_count > MAX_CPUS) {

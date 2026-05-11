@@ -22,13 +22,14 @@ bool ttyscratch_reserve(TtyScratch* scratch, size_t extra) {
 void ttyscratch_shrink(TtyScratch* scratch) {
     if(scratch->len <= sizeof(scratch->small_inline)) {
         memcpy(scratch->small_inline, scratch->data, scratch->len);
-        if(scratch->data != scratch->small_inline) kernel_dealloc(scratch->data, scratch->cap);
+        if(scratch->data != scratch->small_inline) {
+            kernel_dealloc(scratch->data, scratch->cap);
+        }
         scratch->cap = sizeof(scratch->small_inline);
         scratch->data = scratch->small_inline;
         return;
-    } 
-    // TODO: Could technically do PAGE_ALIGN_UP so then it would have a little extra
-    // capacity, but idrk
+    }
+    if(scratch->len == 0) return;   
     char* data = kernel_malloc(scratch->len);
     if(!data) return;
     memcpy(data, scratch->data, scratch->len);
@@ -238,15 +239,15 @@ void init_tty(void) {
     }
     Tty* tty = get_init_tty();
     if(!tty) {
-        // FIXME: cache_destory on tty_cache
+        tty_cache = NULL;
         printk("(tty) Missing initial tty");
         return;
     }
     intptr_t e;
     if((e=vfs_register_device("tty0", &tty->inode)) < 0) {
+        // Cleanup on failure
         // FIXME: deallocate the device
         // FIXME: deinit the tty
-        // FIXME: cache_destory on tty_cache
         printk("(tty) Failed to register tty device: %s", status_str(e));
         return;
     }

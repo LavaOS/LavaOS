@@ -14,14 +14,7 @@
 #include "apic.h"
 #include <sync/spinlock.h>
 
-#define return_defer_err(x) do {\
-    e=(x);\
-    goto DEFER_ERR;\
-} while(0)
-
-
 intptr_t fork(Task* task, Task* result, void* frame) {
-    intptr_t e=0;
     struct list* list = &task->memlist;
     struct list* first = list;
     list = list->next;
@@ -42,7 +35,7 @@ intptr_t fork(Task* task, Task* result, void* frame) {
             return -NOT_ENOUGH_MEM;
         MemoryList* nlist = memlist_new(region);
         if(!nlist) {
-            memregion_drop(region, result->cr3);
+            memregion_drop(nreg, result->cr3);
             // return_defer_err(-NOT_ENOUGH_MEM);
             return -NOT_ENOUGH_MEM;
         }
@@ -67,14 +60,12 @@ intptr_t fork(Task* task, Task* result, void* frame) {
         spinlock_unlock(&kernel.load_balancer_lock);
     }
     return result->process->id;
-    if(result) drop_task(result);
-    return e;
 }
 intptr_t exec_new(const char* path, Args* args, Args* env) {    
     intptr_t e=0;
     Process* process = kernel_process_add();
     Task* task = NULL;
-    if(!process) return -LIMITS; // Reached max tasks and/or we're out of memory
+    if(!process) return -LIMITS;
     process->resources = new_resource_block();
     // if(!process->resources) return_defer_err(-NOT_ENOUGH_MEM);
     if(!process->resources) return -NOT_ENOUGH_MEM;
@@ -96,13 +87,13 @@ intptr_t exec_new(const char* path, Args* args, Args* env) {
     if((e=parse_abs(path, &p)) < 0)
         // return_defer_err(e);
         return e;
-    if((e=exec(task, &p, args, env)) < 0)
-        // return_defer_err(e);
+
+    if((e=exec(task, &p, args, env)) < 0) {
+        drop_task(task);
+        process_drop(process);
         return e;
+    }
     return process->id;
-    if(task) drop_task(task);
-    if(process) process_drop(process);
-    return e;
 }
 static intptr_t args_push(Task* task, Args* args, char** stack_head, char*** argv) {
     // TODO: Kind of interesting but what if you swapped the cr3 AFTER YOU JOINED WITH THE KERNEL MEMORY MAP
@@ -274,7 +265,6 @@ intptr_t exec(Task* task, Path* path, Args* args, Args* envs) {
     // memory regions
     paddr_t cr3_phys; 
     if(!(cr3_phys = kernel_page_alloc())) {
-        return_defer_err(-NOT_ENOUGH_MEM);
         return -NOT_ENOUGH_MEM;
     }
     task->cr3_phys = cr3_phys;
@@ -313,12 +303,12 @@ intptr_t exec(Task* task, Path* path, Args* args, Args* envs) {
     if((e=args_push(task, envs, &stack_head, &envp)) < 0) 
         // return_defer_err(e);
         return e;
-    stack_head = (char*)(((((uintptr_t)stack_head))/16)*16);
+    stack_head = (char*)((uintptr_t)stack_head & ~0xF);
     char** argv;
     if((e=args_push(task, args, &stack_head, &argv)) < 0) 
         // return_defer_err(e);
         return e;
-    stack_head = (char*)(((((uintptr_t)stack_head))/16)*16);
+    stack_head = (char*)((uintptr_t)stack_head & ~0xF);
     void* frame = (void*)(virt_to_phys(task->cr3, KERNEL_STACK_PTR) | KERNEL_MEMORY_MASK);
     task->rsp = (void*)(KERNEL_STACK_PTR - (frame - setup_user_first_exec(frame, header.entry, (uintptr_t)stack_head, args->argc, (uintptr_t)argv, (uintptr_t)envp)));
     disable_interrupts();
@@ -338,11 +328,5 @@ intptr_t exec(Task* task, Path* path, Args* args, Args* envs) {
         list_insert(&task->list, &processor->scheduler.queue);
         spinlock_unlock(&kernel.load_balancer_lock);
     }
-    return 0;
-DEFER_ERR:
-    if(pheaders) kernel_dealloc(pheaders, header.phnum * sizeof(Elf64ProgHeader));
-    if(kstack_region) memlist_dealloc(kstack_region, NULL);
-    if(ustack_region) memlist_dealloc(ustack_region, NULL);
-    if(file) idrop(file);
     return e;
 }

@@ -23,4 +23,3 @@ void init_devices() {
         kwarn("Failed to initialise ptm device: %s", status_str(e));
     }
 }
-

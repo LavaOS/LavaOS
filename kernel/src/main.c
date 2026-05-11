@@ -46,14 +46,10 @@
 #include "mem/shared_mem.h"
 #include "printk.h"
 #include "term/fb/fb.h"
-#include "ide/ide.h"
 
-#include "delay.h"
-#include "rtc.h"
 #include "fblogger.h"
 #include "hash_table.h"
 #include "kht.h"
-#include "shell/sh.h"
 
 void spawn_init(void) {
     intptr_t e = 0;
@@ -106,14 +102,6 @@ void _start() {
     init_acpi();
     printk("[ OK ] Started Interrupt controller.\n");
     enable_interrupts();
-    printk("[WAIT] Doing IO ports self test.\n");
-    outb(0x00, 0x00);
-    outw(0x00, 0x00);
-    outl(0x00, 0x00);
-    inb(0x00);
-    inw(0x00);
-    inl(0x00);
-    printk("[ OK ] IO ports self test finished.\n");
     printk("[WAIT] Configuring caches...\n");
     init_cache_cache();
     minos_socket_init_cache();
@@ -131,26 +119,22 @@ void _start() {
     printk("[VERB] Initialazing load balancer lock...\n");
     spinlock_init(&kernel.load_balancer_lock);
     printk("[VERB] Configuring memory, starting core tasks and scheduler...\n");
+    printk("[VERB] Memregion...\n");
     init_memregion();
+    printk("[VERB] Processes...\n");
     init_processes();
+    printk("[VERB] Tasks...\n");
     init_tasks();
+    printk("[VERB] Kernel task...\n");
     init_kernel_task();
+    printk("[VERB] Schedulers...\n");
     init_schedulers();
+    printk("[VERB] Task switch...\n");
     init_task_switch();
+    printk("[VERB] Resources...\n");
     init_resources();
+    printk("[VERB] SHM Cache...\n");
     init_shm_cache();
-
-    printk("[WAIT] Initilazing RTC...\n");
-    disable_interrupts();
-    calibrate_tsc();
-    printk("[VERB] CPU calibrated at ~%llu Hz\n", tsc_hz);
-    rtc_init();
-    printk("[WAIT] Initilazed RTC.\n");
-    rtc_print_time();
-
-    printk("[VERB] Starting IDE...\n");
-    ide_init();
-
     enable_interrupts();
     printk("[WAIT] Initilazing filesystms...\n");
     printk("[VERB] Initilazing VFS...\n");
@@ -163,9 +147,7 @@ void _start() {
     printk("[VERB] Initilazing TTY...\n");
     init_tty();
 
-    const char* boot_lksh = cmdline_get("lksh");
-
-    if(!boot_lksh) spawn_init();
+    spawn_init();
 
     disable_interrupts();
     irq_clear(kernel.task_switch_irq);

@@ -3,7 +3,7 @@
 #include <stddef.h>
 #include "stat.h"
 
-#define PATH_MAX 4096
+#define PATH_MAX 8196
 typedef uint32_t oflags_t;
 enum {
     SEEK_START,
