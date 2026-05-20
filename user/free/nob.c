@@ -25,16 +25,19 @@ int main(int argc, char **argv) {
     String_Builder stb = { 0 };
     if(nob_c_needs_rebuild(&stb, &pathb, output, sources, ARRAY_LEN(sources))) {
         cmd_append(&cmd, cc, "-o", output);
-        cmd_append(&cmd, "-O0", "-g", "-Wall", "-Wextra", "-Wno-unused-function");
+        cmd_append(&cmd, "-O0", "-g", "-Wall", "-Werror", "-Wextra", "-Wno-unused-function");
+        cmd_append(&cmd, temp_sprintf("-L%s/bin/libhal", minos_root));
+        cmd_append(&cmd, "-lhal");
+        cmd_append(&cmd, "-I../libhal/include");
         cmd_append(&cmd, temp_sprintf("-L%s/bin/libsize", minos_root));
         cmd_append(&cmd, "-lsize");
         cmd_append(&cmd, "-I../libsize/include");
         da_append_many(&cmd, sources, ARRAY_LEN(sources));
-        nob_cmd_run_sync_and_reset(&cmd);
-        cmd_append(&cmd, "strip", "-s", output);
         if(!nob_cmd_run_sync_and_reset(&cmd)) return 1;
     }
     char* rootdir = getenv("ROOTDIR");
     if(rootdir && !copy_file(output, temp_sprintf("%s/user/free", rootdir))) 
         return 1;
 }
+
+

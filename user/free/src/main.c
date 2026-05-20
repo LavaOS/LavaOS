@@ -1,25 +1,23 @@
 #include <stdio.h>
-#include <string.h>
-#include <minos/sysstd.h>
-#include <minos/sysctl.h>
-#include <errno.h>
-#include <string.h>
-#include <stdlib.h>
-#include <assert.h>
+#include <inttypes.h>
 #include <sizes.h>
+#include <hal/core.h>
+#include <hal/mem.h>
 
-int main() {
-    char namebuf[MAX_SYSCTL_NAME];
-    intptr_t e = _sysctl(SYSCTL_KERNEL_NAME, namebuf);
-    if(e < 0) strcpy(namebuf, "Unknown");
-    SysctlMeminfo meminfo = { 0 };
-    e = _sysctl(SYSCTL_MEMINFO, &meminfo);
-    if(e < 0) {
-        meminfo.total = 0;
-        meminfo.free = 0;
-        meminfo.cached = 0;
-        meminfo.used = 0;
-        meminfo.available = 0;
+int main(void)
+{
+    SysctlMeminfo sys_mem;
+
+    if (hal_get_meminfo(&sys_mem) < 0) {
+        printf("Failed to get memory info\n");
+        return 1;
     }
-    printf("Total: %ld MiB\nUsed: %ld MiB\nFree: %ld MiB\nShared/Cache: %ld MiB\nAvailable: %ld MiB\n", meminfo.total / MiB, meminfo.used / MiB, meminfo.free / MiB, meminfo.cached / MiB, meminfo.available / MiB);
+
+    printf("Total: %" PRIu64 " MiB\n", sys_mem.total / MiB);
+    printf("Used: %" PRIu64 " MiB\n", sys_mem.used / MiB);
+    printf("Free: %" PRIu64 " MiB\n", sys_mem.free / MiB);
+    printf("Shared/Cache: %" PRIu64 " MiB\n", sys_mem.cached / MiB);
+    printf("Available: %" PRIu64 " MiB\n", sys_mem.available / MiB);
+
+    return 0;
 }
