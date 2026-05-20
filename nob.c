@@ -163,7 +163,7 @@ static void help(const char* exe) {
     }
 }
 static bool prepare(Cmd* cmd) {
-    // cmd_append(cmd, "sh", "-c", "git submodule update --init --recursive --remote");
+    cmd_append(cmd, "sh", "-c", "git submodule update --init --recursive --remote");
     return cmd_run_sync_and_reset(cmd);
 }
 int main(int argc, char** argv) {
