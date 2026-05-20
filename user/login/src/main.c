@@ -50,12 +50,26 @@ int main(void) {
 
             setenv("USER", username, 2);
 
-            const char* path = "/user/wm";
+
+            const char* path;
+            const char* session = getenv("SESSION");
+
+            if (!session) {
+                printf("[LGIN] Session is empty\n");
+                exit(1);
+            } else if (strcmp(session, "desktop") == 0) {
+                path = "/user/wm";
+            } else if (strcmp(session, "tty") == 0) {
+                path = "/sbin/lash";
+            } else {
+                printf("[LGIN] Invaild session\n");
+                exit(1);
+            }
             char* const argv[] = { (char*)path, NULL };
 
             execve(path, argv, environ);
 
-            perror("[LGIN] Failed to start child");
+            printf("[LGIN] Failed to start child\n");
             memset(password, 0, sizeof(password));
             exit(1);
         }

@@ -15,6 +15,16 @@ typedef struct Task Task;
 #include <sync/mutex.h>
 #include <sync/spinlock.h>
 typedef struct {
+    // Kernel details
+    char *kname;
+    char *kver;
+
+    // Distro details (Currently LavaOS)
+    char *dname;
+    char *dver;
+    // Codename
+    char *dcode;
+
     Bitmap map;
     Mutex map_lock;
     page_t pml4;

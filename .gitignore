@@ -6,7 +6,6 @@ bootstrap
 *.exe
 *.old
 *.ini
-config.h
 *.txt
 *.log
 keycode.py

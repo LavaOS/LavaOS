@@ -6,7 +6,7 @@
 #include <interrupt.h>
 #include <log.h>
 
-#define PS2_CMD_QUEUE_CAP 8
+#define PS2_CMD_QUEUE_CAP 256
 static_assert(PS2_CMD_QUEUE_CAP > 0 && is_power_of_two(PS2_CMD_QUEUE_CAP), "PS2_CMD_QUEUE_CAP must be a power of two!");
 #define PS2_CMD_QUEUE_MASK (PS2_CMD_QUEUE_CAP - 1)
 
@@ -64,7 +64,7 @@ void ps2_handle_ack(void) {
             outb(PS2_DATA_PORT, ps2_cmd_queue.addr[ps2_cmd_queue.tail].cmd);
         }
     default:
-        printk("ps2_handle_ack> other %02X", ps2_cmd_queue.addr[ps2_cmd_queue.tail].state);
+        // printk("ps2_handle_ack> other %02X", ps2_cmd_queue.addr[ps2_cmd_queue.tail].state);
     }
 }
 intptr_t ps2_wait_write(void) {

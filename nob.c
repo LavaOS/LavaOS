@@ -163,19 +163,13 @@ static void help(const char* exe) {
     }
 }
 static bool prepare(Cmd* cmd) {
-    cmd_append(cmd, "sh", "-c", "git submodule update --init --recursive --remote");
+    // cmd_append(cmd, "sh", "-c", "git submodule update --init --recursive --remote");
     return cmd_run_sync_and_reset(cmd);
 }
-const char* default_config = 
-     "//// Other options\n"
-     "//// Enable/Disable serial colors for loggers\n"
-     "// #define NO_SERIAL_COLOR\n"
-     ;
 int main(int argc, char** argv) {
     Cmd cmd = { 0 };
     NOB_GO_REBUILD_URSELF(argc, argv);
     if(!prepare(&cmd)) nob_log(NOB_ERROR, "Failed to bootstrap submodule!");
-    if(!file_exists("config.h") && !write_entire_file("config.h", default_config, strlen(default_config))) return 1;
     Build build = { 0 };
     build.exe = shift_args(&argc, &argv),
     build.argc = argc;

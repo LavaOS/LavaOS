@@ -1,8 +1,9 @@
 #pragma once
 #include <stdint.h>
-#define MAX_SYSCTL_NAME 64
+#define MAX_SYSCTL_NAME 512
 enum {
     SYSCTL_KERNEL_NAME,
+    SYSCTL_DISTRO_NAME,
     SYSCTL_MEMINFO,
     SYSCTL_COUNT
 };

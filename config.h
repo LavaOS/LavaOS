@@ -1,0 +1,5 @@
+#define KNAME "LNU"
+#define KVER "0.1.1-pre-release-1"
+#define DNAME "LavaOS"
+#define DVER "0.1.1-pre-release-1"
+#define DCODE "Big Bang"

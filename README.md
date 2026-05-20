@@ -46,7 +46,7 @@
     <td align="center"><img src="screenshots/desktop.png" width="300"><br><sub>🖥️ Desktop</sub></td>
   </tr>
   <tr>
-    <td align="center"><img src="screenshots/dim.png" width="300"><br><sub>📝 DIM Editor</sub></td>
+    <td align="center"><img src="screenshots/dim.png" width="300"><br><sub>📝 DIM Editor (In new version: Vi)</sub></td>
     <td align="center"><img src="screenshots/doomgeneric.png" width="300"><br><sub>🎮 DOOM</sub></td>
   </tr>
   <tr>
@@ -172,7 +172,7 @@
     <td><code>user/doomgeneric/LICENSE</code></td>
   </tr>
   <tr>
-    <td><a href="https://github.com/Dcraftbg/dim">DIM Editor</a></td>
+    <td><a href="https://github.com/Dcraftbg/dim">DIM Editor (reworked and renamed to Vi)</a></td>
     <td>dcraftbg</td>
     <td>MIT</td>
     <td><code>licenses/LICENSE.DIM</code></td>

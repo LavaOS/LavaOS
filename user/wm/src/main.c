@@ -1154,8 +1154,6 @@ void keyboard_thread(void*) {
     exit(0);
 }
 int main(void) {
-    setenv("SESSION", "MinOS Window Manager (Running on pluto)", 3);
-
     intptr_t e;
     gtinit();
     list_init(&windows);

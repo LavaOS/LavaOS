@@ -33,9 +33,9 @@ enum {
     MODE_COUNT
 };
 const char* mode_str_map[MODE_COUNT] = {
-    [MODE_NORMAL] = "Normal",
-    [MODE_INSERT] = "Insert",
-    [MODE_CMD]    = "Command",
+    [MODE_NORMAL] = "NOR",
+    [MODE_INSERT] = "INS",
+    [MODE_CMD]    = "CMD",
 };
 const char* mode_to_str(uint32_t mode) {
     if(mode >= MODE_COUNT) return NULL;
@@ -455,10 +455,11 @@ int main(int argc, const char** argv) {
     editor.config.status_line.chr = ' ';
     editor.config.status_line.bg = STUI_RGB(0x111111);
     editor.config.mode.fg = STUI_RGB(0x212121);
-    editor.config.mode.bg = STUI_RGB(0x0ff082);
-    editor.config.filepath.fg = STUI_RGB(0x71fbc4);
-    editor.config.bg = STUI_RGB(0x212121);
-    editor.config.fg = STUI_RGB(0xd6d6d6);
+    // editor.config.mode.bg = STUI_RGB(0x0ff082);
+    editor.config.mode.bg = STUI_RGB(0xabcdef);
+    editor.config.filepath.fg = STUI_RGB(0xabcdef);
+    editor.config.bg = STUI_RGB(0x000000);
+    editor.config.fg = STUI_RGB(0xc0c0c0);
     // Unless status line has an override, inherit everything from bg/fg
     if(!editor.config.status_line.bg) editor.config.status_line.bg = editor.config.bg;
     if(!editor.config.status_line.fg) editor.config.status_line.fg = editor.config.fg;

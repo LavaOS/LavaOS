@@ -36,4 +36,5 @@ enum {
     SYS_STLUP,
     SYS_STDEL,
     SYS_STOWR,
+    SYS_PRINTK,
 };

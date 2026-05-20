@@ -7,7 +7,7 @@
 #include <log.h>
 #include "framebuffer.h"
 #include "bootutils.h"
-#define EVENT_QUEUE_CAP 128 
+#define EVENT_QUEUE_CAP 16384
 static MouseEvent event_queue_buf[EVENT_QUEUE_CAP] = { 0 };
 static MouseEventQueue event_queue = { 0 };
 

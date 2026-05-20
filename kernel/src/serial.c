@@ -69,9 +69,7 @@ void serial_print_sink(void* _, const char* data, size_t len) { serial_print(dat
 static intptr_t serial_log(Logger* logger, uint32_t level, const char* fmt, va_list args) {
     if(level >= LOG_COUNT) return -UNSUPPORTED;
     mutex_lock(&logger->mutex);
-    #ifndef NO_SERIAL_COLOR
     serial_log_draw_color(logger, logger_color_map[level]);
-    #endif
     {
         char buf[10];
         size_t at=0;
@@ -85,9 +83,7 @@ static intptr_t serial_log(Logger* logger, uint32_t level, const char* fmt, va_l
         serial_print(buf, at);
     }
     print_base(NULL, serial_print_sink, fmt, args);
-    #ifndef NO_SERIAL_COLOR
     serial_log_draw_color(logger, LOG_COLOR_RESET);
-    #endif
     serial_print_u8('\n');
     mutex_unlock(&logger->mutex);
     return 0;
@@ -96,11 +92,7 @@ static intptr_t serial_log(Logger* logger, uint32_t level, const char* fmt, va_l
 Logger serial_logger = {
     .log = serial_log,
     .write_str = serial_log_write_str,
-#ifdef NO_SERIAL_COLOR
-    .draw_color = NULL,
-#else
     .draw_color = serial_log_draw_color,
-#endif
     .level = LOG_ALL,
     .private = NULL,
 };

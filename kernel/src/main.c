@@ -51,24 +51,41 @@
 #include "hash_table.h"
 #include "kht.h"
 
+static void set_version() {
+    kernel.kname = KNAME; // LNU (LNU is Not Unix) is a MinOS-based kernel with some changes and optimizations.
+    kernel.kver = KVER;
+
+    kernel.dname = DNAME;
+    kernel.dver = DVER;
+    kernel.dcode = DCODE;
+}
+static void handle_interrupts() {
+    for(;;) {
+        asm volatile("hlt");
+    }
+}
 void spawn_init(void) {
     intptr_t e = 0;
     const char* epath = NULL;
     Args args;
     Args env;
-    epath = "/sbin/init";
-    const char* argv[] = {epath, "test_arg", NULL};
+    epath = "/init";
+    const char* argv[] = {epath, NULL};
     args = create_args(argv);
-    const char* envv[] = {"FOO=BAR", "BAZ=A", NULL};
+    const char* envv[] = {NULL};
     env  = create_args(envv);
     if((e = exec_new(epath, &args, &env)) < 0) kpanic("Failed to exec %s : %s",epath,status_str(e));
-    kinfo("Spawning `%s` id=%zu pid=%zu", epath, (size_t)e, ((Process*)(kernel.processes.items[(size_t)e]))->main_thread->id);
 }
 void _start() {
     disable_interrupts();
     BREAKPOINT();
 
-    printk("Welcome to LavaOS!\n\n");
+    set_version();
+
+    printk("Using %s kernel. (version %s)\n", kernel.kname, kernel.kver);
+    printk("Now booting %s. (version %s, codename %s)\n", kernel.dname, kernel.dver, kernel.dcode);
+
+    printk("\n");
 
     printk("[WAIT] Initilazing serial...\n");
     serial_init();
@@ -147,12 +164,11 @@ void _start() {
     printk("[VERB] Initilazing TTY...\n");
     init_tty();
 
+    printk("[VERB] Spawning init...\n");
     spawn_init();
 
     disable_interrupts();
     irq_clear(kernel.task_switch_irq);
     enable_interrupts();
-    for(;;) {
-        asm volatile("hlt");
-    }
+    handle_interrupts();
 }

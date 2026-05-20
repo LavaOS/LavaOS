@@ -2,6 +2,7 @@
 #include "../../port.h"
 #include "../../power.h"
 #include "../../shutdown.h"
+#include "../../printk.h"
 #include "../../shared_table.h"
 #include "../../sockets/minos.h"
 
@@ -730,8 +731,6 @@ intptr_t sys_shmrem(size_t key) {
     return 0;
 }
 
-char _kernel_name[] = "LavaOS";
-
 intptr_t sys_sysctl(uint32_t op, void* arg) {
     uint64_t kernel_cache_cache = measure_cache_bytes(kernel.cache_cache);
     uint64_t kernel_inode_cache = measure_cache_bytes(kernel.inode_cache);
@@ -750,7 +749,10 @@ intptr_t sys_sysctl(uint32_t op, void* arg) {
 
     switch(op) {
     case SYSCTL_KERNEL_NAME:
-        memcpy(arg, _kernel_name, sizeof(_kernel_name)-1);
+        memcpy(arg, kernel.kname, sizeof(kernel.kname)-1);
+        break;
+    case SYSCTL_DISTRO_NAME:
+        memcpy(arg, kernel.dname, sizeof(kernel.dname)-1);
         break;
     case SYSCTL_MEMINFO: {
         SysctlMeminfo* mem_info = arg;
@@ -789,5 +791,12 @@ intptr_t sys_stdel(void* key) {
 }
 intptr_t sys_stowr(void* key, void* new_value) {
     st_overwrite(key, new_value);
+    return 0;
+}
+intptr_t sys_printk(const char* x, ...) {
+    va_list args;
+    va_start(args, x);
+    vprintk(x, args);
+    va_end(args);
     return 0;
 }

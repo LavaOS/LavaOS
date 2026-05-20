@@ -7,8 +7,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+int main(void);
+
 void _start(int argc, const char** argv, const char** envp) {
-    fprintf(stderr, "\033[2J\033[H");
     const char* std = "/devices/tty0";
     if(open(std, O_WRONLY) < 0 ||   /*STDOUT*/
        open(std, O_RDONLY) < 0 ||   /*STDIN*/
@@ -17,6 +18,7 @@ void _start(int argc, const char** argv, const char** envp) {
     }
     _libc_init_environ(envp);
     _libc_init_streams();
+    // fprintf(stderr, "\033[2J\033[H");
     int code = main();
     close(STDOUT_FILENO);
     if(STDIN_FILENO != STDOUT_FILENO) {
@@ -24,7 +26,7 @@ void _start(int argc, const char** argv, const char** envp) {
     }
     exit(code);
 }
-int main() {
+int main(void) {
     printf("\033[2J\033[H");
     fflush(stdout);
 
@@ -32,11 +34,12 @@ int main() {
 
     printf("[INIT] Setting path...\n");
     setenv("PATH", "/user:/sbin:", 0);
-    printf("[INIT] Setting hostname...\n");
+    printf("[INIT] Setting hostname and session...\n");
     setenv("HOSTNAME", "lavaos", 1);
+    setenv("SESSION", "desktop", 1);
 
-    printf("\033[2J\033[H");
-    fflush(stdout);
+    // printf("\033[2J\033[H");
+    // fflush(stdout);
 
     const char* path = "/etc/init.d/login";
     const char* argv[] = { path, NULL };

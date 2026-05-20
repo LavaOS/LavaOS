@@ -1,4 +1,5 @@
 #include "keyboard.h"
+#include "../../../port.h"
 #include <stdint.h>
 #include <stdbool.h>
 #include <keyqueue.h>
@@ -130,6 +131,42 @@ static const char* keycode_display(uint16_t key, char* buf, size_t size) {
 
 static bool extended;
 static KeyQueue keyqueue;
+static bool capslock_on = false;
+static bool numlock_on = false;
+static bool scrolock_on = false;
+uint16_t key = 0;
+
+static void ps2_set_leds(void) {
+    uint8_t leds = 0;
+    if (capslock_on) leds |= 0x04;
+    if (numlock_on)  leds |= 0x02;
+    
+    outb(0x60, 0xED);
+    for(int i = 0; i < 10; i++) {
+        if (inb(0x64) & 0x01) {
+            if (inb(0x60) == 0xFA) break;
+        }
+    }
+    outb(0x60, leds);
+}
+void ps2_set_capslock(bool on) {
+    if (capslock_on == on) return;
+    outb(0x64, 0xD2);
+    outb(0x60, 0x3A);
+}
+bool ps2_get_capslock(void) {
+    return capslock_on;
+}
+void ps2_set_numlock(bool on) {
+    if (numlock_on == on) return;
+    
+    outb(0x64, 0xD2);
+    outb(0x60, 0x45);
+}
+bool ps2_get_numlock(void) {
+    return numlock_on;
+}
+
 void ps2_keyboard_handler(TaskRegs* regs) {
     (void)regs;
     size_t i = 0;
@@ -147,6 +184,28 @@ void ps2_keyboard_handler(TaskRegs* regs) {
     case PS2_RESEND:
         ps2_handle_resend();
         break;
+    case 0x3A:
+        capslock_on = !capslock_on;
+        ps2_set_leds();
+        klog(LOG_INFO, "Capslock status: %s", capslock_on ? "ON" : "OFF");
+        key = MINOS_KEY_CAPSLOCK;
+        break;
+    case 0xBA:
+        break;
+    case 0x45:
+        numlock_on = !numlock_on;
+        ps2_set_leds();
+        klog(LOG_INFO, "Numlock status: %s", numlock_on ? "ON" : "OFF");
+        key = MINOS_KEY_NUMLOCK;
+        break;
+    case 0xC5:
+        break;
+    case 0x46:
+        klog(LOG_INFO, "Scrolllock status: %s", scrolock_on ? "ON" : "OFF");
+        key = MINOS_KEY_SCROLLLOCK;
+        break;
+    case 0xC6:
+        break;
     case 0xE0:
         extended = true;
         break;
@@ -159,7 +218,7 @@ void ps2_keyboard_handler(TaskRegs* regs) {
                 norm < ARRAY_LEN(SCAN1_PS2_EX) ? SCAN1_PS2_EX[norm] : 0 :
                 norm < ARRAY_LEN(SCAN1_PS2   ) ? SCAN1_PS2   [norm] : 0;
         if(key) {
-           keyqueue_push(&keyqueue, (Key) { key, released });
+            keyqueue_push(&keyqueue, (Key) { key, released });
         }
         extended = false;
     }
