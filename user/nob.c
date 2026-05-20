@@ -30,7 +30,6 @@ const char* projects[] = {
     "login",
     "ls",
     "tree",
-    // "my_basic",
     "math",
     "mimux",
     "reboot",
