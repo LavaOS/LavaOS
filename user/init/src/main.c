@@ -38,9 +38,6 @@ int main(void) {
     setenv("HOSTNAME", "lavaos", 1);
     setenv("SESSION", "desktop", 1);
 
-    // printf("\033[2J\033[H");
-    // fflush(stdout);
-
     const char* path = "/etc/init.d/login";
     const char* argv[] = { path, NULL };
 
