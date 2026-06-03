@@ -81,7 +81,7 @@ void init_bitmap() {
     assert(biggest_avail != -1 && "Cannot operate on 0 RAM");
     struct limine_memmap_entry* biggest = limine_memmap_request.response->entries[biggest_avail];
     struct limine_memmap_entry* last = limine_memmap_request.response->entries[last_available];
-    assert(biggest->base < PHYS_RAM_MIRROR_SIZE && "Biggest data block has to be below 4GB. Sorry");
+    assert(biggest->base < PHYS_RAM_MIRROR_SIZE && "Biggest data block has to be below 1TiB. Sorry");
     kernel.map.addr = (uint8_t*)(biggest->base | KERNEL_MEMORY_MASK);
     kernel.map.page_count = (PAGE_ALIGN_UP(last->base) + PAGE_ALIGN_UP(last->length)) / PAGE_SIZE;
     if((kernel.map.page_count+7)/8 > biggest->length) {

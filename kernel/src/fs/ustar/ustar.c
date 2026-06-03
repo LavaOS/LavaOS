@@ -16,7 +16,7 @@ int octtoi(const char* str, size_t len) {
 
 typedef char Ustar12[12];
 typedef struct {
-    char filename[100];
+    char filename[1024];
     uint64_t mode;
     uint64_t ownerid;
     uint64_t groupid;
@@ -24,7 +24,7 @@ typedef struct {
     Ustar12 modtime;
     uint64_t checksum; 
     uint8_t type;
-    char linkedf_name[100];
+    char linkedf_name[1024];
     char ustar_indict[6];
     char ustar_version[2];
     char owner_name[32];

@@ -24,5 +24,5 @@ void init_rootfs(void) {
             printk("Failed to unpack: %s into root: %s", initrd, status_str(e));
         }
     }
-    else kpanic("Bro you can't boot live iso without initrd :|"); // Initrd not found
+    else kpanic("Initrd not found");
 }

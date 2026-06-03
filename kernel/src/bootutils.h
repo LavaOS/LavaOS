@@ -26,4 +26,4 @@ bool find_bootmodule(const char* path, BootModule* module);
 char* get_kernel_cmdline();
 #include "page.h"
 paddr_t get_rsdp_addr();
-#define PHYS_RAM_MIRROR_SIZE (4LLU * 1024LLU * 1024LLU * 1024LLU) 
+#define PHYS_RAM_MIRROR_SIZE (1ULL << 40)
