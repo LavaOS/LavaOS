@@ -40,6 +40,10 @@ void process_drop(Process* process) {
     if(process->resources) resourceblock_dealloc(process->resources);
     if(process->curdir) kernel_dealloc(process->curdir, PATH_MAX);
     if(process->curdir_inode) idrop(process->curdir_inode);
+    mutex_lock(&kernel.processes_mutex);
+    if(process->id < kernel.processes.len && kernel.processes.items[process->id] == process)
+        kernel.processes.items[process->id] = NULL;
+    mutex_unlock(&kernel.processes_mutex);
     cache_dealloc(kernel.process_cache, process);
 }
 

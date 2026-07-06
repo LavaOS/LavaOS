@@ -21,9 +21,11 @@
 #include <minos/sysctl.h>
 #include <minos/fcntl.h>
 #include "mem/shared_mem.h"
+#include "mem/memregion.h"
 #include "task_regs.h"
 #include "epoll.h"
 #include "socket.h"
+#include "../../page.h"
 
 static intptr_t parse_path(Process* process, Path* res, const char* path) {
     switch(path[0]) {
@@ -305,6 +307,23 @@ intptr_t sys_exec(const char* path, const char** argv, const char** envp) {
     return 0;
 }
 
+static Task*   _exit_pending_task;
+static Process* _exit_pending_proc;
+
+static void task_cleanup_memory(Task* task) {
+    struct list* head = task->memlist.next;
+    while(head != &task->memlist) {
+        struct list* next = head->next;
+        MemoryList* mlist = (MemoryList*)head;
+        memlist_dealloc(mlist, task->cr3);
+        head = next;
+    }
+    list_init(&task->memlist);
+    kernel_page_dealloc(task->cr3_phys);
+    task->cr3 = NULL;
+    task->cr3_phys = 0;
+}
+
 void sys_exit(int code) {
 #ifdef CONFIG_LOG_SYSCALLS
     strace("sys_exit(%d)", code);
@@ -343,6 +362,7 @@ end:
             kernel_dealloc(block, sizeof(*block));
             block = next;
         }
+        cur_proc->resources = NULL;
     }
     {
         for(size_t i = 0; i < cur_proc->shared_memory.len; ++i) {
@@ -351,9 +371,34 @@ end:
             }
         }
         kernel_dealloc(cur_proc->shared_memory.items, cur_proc->shared_memory.cap * PAGE_SIZE);
+        cur_proc->shared_memory.items = NULL;
+        cur_proc->shared_memory.len = 0;
+        cur_proc->shared_memory.cap = 0;
+    }
+    _exit_pending_task = cur_task;
+    _exit_pending_proc = cur_proc;
+    {
+        uintptr_t _cr3_val = (uintptr_t)kernel.pml4 & ~KERNEL_MEMORY_MASK;
+        uintptr_t _rsp_val = KERNEL_STACK_PTR;
+        __asm__ volatile(
+            "movq %0, %%cr3\n"
+            "movq %1, %%rsp\n"
+            :
+            : "r"(_cr3_val), "r"(_rsp_val)
+            : "memory"
+        );
+    }
+    {
+        Task*   dead_task = _exit_pending_task;
+        Process* dead_proc = _exit_pending_proc;
+        task_cleanup_memory(dead_task);
+        mutex_lock(&kernel.tasks_mutex);
+        if(dead_task->id < kernel.tasks.len && kernel.tasks.items[dead_task->id] == dead_task)
+            kernel.tasks.items[dead_task->id] = NULL;
+        mutex_unlock(&kernel.tasks_mutex);
+        process_drop(dead_proc);
     }
     enable_interrupts();
-    // TODO: thread yield
     for(;;) asm volatile("hlt");
 }
 
