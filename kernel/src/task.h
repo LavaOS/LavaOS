@@ -41,4 +41,5 @@ void init_kernel_task();
 Task* kernel_task_add();
 Task* current_task();
 void drop_task(Task* task);
+void task_free_memory(Task* task);
 void task_resume(Task* task);

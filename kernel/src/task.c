@@ -2,8 +2,10 @@
 #include "assert.h"
 #include "kernel.h"
 #include "mem/slab.h"
+#include "mem/memregion.h"
 #include "string.h"
 #include "port.h"
+#include "pic.h"
 #include "exec.h"
 #include "log.h"
 #include "interrupt.h"
@@ -59,6 +61,23 @@ void drop_task(Task* task) {
     
     cache_dealloc(kernel.task_cache, task);   
     mutex_unlock(&kernel.tasks_mutex);
+}
+
+void task_free_memory(Task* task) {
+    if(!task) return;
+    struct list* head = task->memlist.next;
+    while(head != &task->memlist) {
+        struct list* next = head->next;
+        MemoryList* mlist = (MemoryList*)head;
+        memlist_dealloc(mlist, task->cr3);
+        head = next;
+    }
+    list_init(&task->memlist);
+    if(task->cr3_phys) {
+        kernel_page_dealloc(task->cr3_phys);
+        task->cr3 = NULL;
+        task->cr3_phys = 0;
+    }
 }
 
 Task* current_task(void) {

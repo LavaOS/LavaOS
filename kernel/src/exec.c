@@ -89,6 +89,7 @@ intptr_t exec_new(const char* path, Args* args, Args* env) {
         return e;
 
     if((e=exec(task, &p, args, env)) < 0) {
+        task_free_memory(task);
         drop_task(task);
         process_drop(process);
         return e;

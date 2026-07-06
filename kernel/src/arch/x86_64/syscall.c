@@ -310,20 +310,6 @@ intptr_t sys_exec(const char* path, const char** argv, const char** envp) {
 static Task*   _exit_pending_task;
 static Process* _exit_pending_proc;
 
-static void task_cleanup_memory(Task* task) {
-    struct list* head = task->memlist.next;
-    while(head != &task->memlist) {
-        struct list* next = head->next;
-        MemoryList* mlist = (MemoryList*)head;
-        memlist_dealloc(mlist, task->cr3);
-        head = next;
-    }
-    list_init(&task->memlist);
-    kernel_page_dealloc(task->cr3_phys);
-    task->cr3 = NULL;
-    task->cr3_phys = 0;
-}
-
 void sys_exit(int code) {
 #ifdef CONFIG_LOG_SYSCALLS
     strace("sys_exit(%d)", code);
@@ -391,7 +377,7 @@ end:
     {
         Task*   dead_task = _exit_pending_task;
         Process* dead_proc = _exit_pending_proc;
-        task_cleanup_memory(dead_task);
+        task_free_memory(dead_task);
         mutex_lock(&kernel.tasks_mutex);
         if(dead_task->id < kernel.tasks.len && kernel.tasks.items[dead_task->id] == dead_task)
             kernel.tasks.items[dead_task->id] = NULL;
