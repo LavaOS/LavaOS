@@ -11,9 +11,10 @@ void kpanic(const char* fmt, ...) {
     kfatal_va(fmt, args);
     va_end(args);
     va_start(args, fmt);
+    kclear(0x000000);
     printk_set_color(0xFF0000, 0x000000);
 
-    printk("[BUG!] ");
+    printk("\n  Oops!\n  ");
     vprintk(fmt, args);
     printk("\n");
 

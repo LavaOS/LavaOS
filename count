@@ -1,1 +1,1 @@
-cloc . --fullpath --not-match-d='.*/user/toolchain' --not-match-d='.*/.git'
+cloc . --fullpath --not-match-d='.*/user/toolchain' --not-match-d='.*/.git' --include-ext=c,h,cc,cpp,cxx,hpp,hxx,s,S,asm

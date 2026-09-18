@@ -131,6 +131,15 @@ typedef struct {
     // Menu:
     uint32_t menu_color;
     uint32_t menu_height;
+    // Compositing:
+    uint8_t alpha;
+    bool has_transparency;
+    bool blur_background;
+    // Cached blurred background for content area
+    uint32_t* cached_blur;
+    size_t cached_blur_w, cached_blur_h;
+    int cached_blur_x, cached_blur_y;  // Screen position of cached blur
+    bool cached_blur_valid;
 
     int running;
 } Window;
@@ -174,6 +183,48 @@ static void fill_rect(const Framebuffer* fb, const Rectangle* rect, uint32_t col
         head = (uint32_t*)(((uint8_t*)head) + fb->pitch_bytes);
     }
 }
+
+// Fast alpha blending: dst = src * alpha + dst * (1 - alpha)
+// Using integer arithmetic for performance
+static inline uint32_t blend_pixel(uint32_t src, uint32_t dst) {
+    uint8_t src_a = (src >> 24) & 0xFF;
+    if (src_a == 0) return dst;
+    if (src_a == 255) return src;
+    
+    uint8_t dst_a = (dst >> 24) & 0xFF;
+    uint8_t inv_src_a = 255 - src_a;
+    
+    uint32_t src_r = (src >> 16) & 0xFF;
+    uint32_t src_g = (src >> 8) & 0xFF;
+    uint32_t src_b = src & 0xFF;
+    
+    uint32_t dst_r = (dst >> 16) & 0xFF;
+    uint32_t dst_g = (dst >> 8) & 0xFF;
+    uint32_t dst_b = dst & 0xFF;
+    
+    uint32_t r = (src_r * src_a + dst_r * inv_src_a) / 255;
+    uint32_t g = (src_g * src_a + dst_g * inv_src_a) / 255;
+    uint32_t b = (src_b * src_a + dst_b * inv_src_a) / 255;
+    uint32_t a = src_a + (dst_a * inv_src_a) / 255;
+    
+    return (a << 24) | (r << 16) | (g << 8) | b;
+}
+
+static void draw_image_alpha(const Framebuffer* fb, const Image* image, size_t x, size_t y) {
+    uint32_t* image_head = image->pixels;
+    uint32_t* head = (uint32_t*)(((uint8_t*)fb->pixels) + fb->pitch_bytes*y);
+    for(size_t dy = 0; dy < image->height && y + dy < fb->height; ++dy) {
+        for(size_t dx = 0; dx < image->width && x + dx < fb->width; ++dx) {
+            uint32_t src = image_head[dx];
+            if (src & (0xFF << 24)) {
+                head[x + dx] = blend_pixel(src, head[x + dx]);
+            }
+        }
+        head = (uint32_t*)(((uint8_t*)head) + fb->pitch_bytes);
+        image_head = (uint32_t*)(((uint8_t*)image_head) + image->pitch_bytes); 
+    }
+}
+
 static void draw_image(const Framebuffer* fb, const Image* image, size_t x, size_t y) {
     uint32_t* image_head = image->pixels;
     uint32_t* head = (uint32_t*)(((uint8_t*)fb->pixels) + fb->pitch_bytes*y);
@@ -198,8 +249,11 @@ static void draw_image_no_alpha(const Framebuffer* fb, const Image* image, size_
         image_head = (uint32_t*)(((uint8_t*)image_head) + image->pitch_bytes); 
     }
 }
-#include <stb_image.h>
-// Utility
+
+// Forward declarations
+static void window_redraw_region(const Framebuffer* fb, const Window* win, const Rectangle* rect, bool skip_content);
+static void redraw_region(const Framebuffer* fb, const Rectangle* rect);
+
 static uint32_t abgr_to_argb(uint32_t a) {
     uint8_t alpha = (a >> 24) & 0xFF; 
     uint8_t blue = (a >> 16) & 0xFF;   
@@ -207,6 +261,7 @@ static uint32_t abgr_to_argb(uint32_t a) {
     uint8_t red = a & 0xFF;            
     return (alpha << 24) | (red << 16) | (green << 8) | blue;
 }
+
 static bool load_image(const char* file, Image* image) {
     int width, height, comp = 0;
     void* pixels = stbi_load(file, &width, &height, &comp, 4);
@@ -238,6 +293,9 @@ static Image wallpaper_img = { 0 };
 // (per user? per workspace?) state 
 static Window* moving_window = NULL;
 static int moving_window_dx = 0, moving_window_dy = 0;
+// Track previous wireframe position for cleanup
+static Rectangle prev_wireframe = {0, 0, 0, 0};
+static bool prev_wireframe_valid = false;
 // (per workspace?)
 static struct list_head windows = { 0 };
 // ....
@@ -381,37 +439,162 @@ static Rectangle window_get_content_rect(const Window* win) {
         win->rect.r - win->border_thick, win->rect.b - win->border_thick
     };
 }
-static void window_redraw_region(const Framebuffer* fb, const Window* win, const Rectangle* rect) {
+
+// Compute blur from wallpaper for a window's content area
+// Writes directly to the provided destination buffer (compact, pitch = width * 4)
+// Caller must ensure dst has size w*h*sizeof(uint32_t)
+static void compute_blur(const Rectangle* content_rect, uint32_t* dst) {
+    const int BLUR_RADIUS = 7;  // 15x15 kernel - glassmorphism style
+    size_t w = content_rect->r - content_rect->l;
+    size_t h = content_rect->b - content_rect->t;
+    if (w == 0 || h == 0) return;
+
+    for (size_t y = 0; y < h; ++y) {
+        uint32_t* dst_row = dst + y * w;
+        size_t screen_y = content_rect->t + y;
+        
+        for (size_t x = 0; x < w; ++x) {
+            size_t screen_x = content_rect->l + x;
+            
+            uint32_t sum_r = 0, sum_g = 0, sum_b = 0, sum_a = 0;
+            int count = 0;
+            
+            for (int dy = -BLUR_RADIUS; dy <= BLUR_RADIUS; ++dy) {
+                for (int dx = -BLUR_RADIUS; dx <= BLUR_RADIUS; ++dx) {
+                    size_t sy = screen_y + dy;
+                    size_t sx = screen_x + dx;
+                    if (sy < fb0.height && sx < fb0.width) {
+                        size_t src_y = (sy * wallpaper_img.height) / fb0.height;
+                        size_t src_x = (sx * wallpaper_img.width) / fb0.width;
+                        if (src_y >= wallpaper_img.height) src_y = wallpaper_img.height - 1;
+                        if (src_x >= wallpaper_img.width) src_x = wallpaper_img.width - 1;
+                        uint32_t* src_row = (uint32_t*)((uint8_t*)wallpaper_img.pixels + src_y * wallpaper_img.pitch_bytes);
+                        uint32_t p = src_row[src_x];
+                        sum_a += (p >> 24) & 0xFF;
+                        sum_r += (p >> 16) & 0xFF;
+                        sum_g += (p >> 8) & 0xFF;
+                        sum_b += p & 0xFF;
+                        count++;
+                    }
+                }
+            }
+            if (count > 0) {
+                dst_row[x] = ((sum_a / count) << 24) | ((sum_r / count) << 16) | ((sum_g / count) << 8) | (sum_b / count);
+            }
+        }
+    }
+}
+
+// Ensure window's cached blur is valid for its current content rect
+// Regenerates if window moved/resized
+static void ensure_cached_blur(Window* win) {
+    Rectangle content_rect = window_get_content_rect(win);
+    size_t w = content_rect.r - content_rect.l;
+    size_t h = content_rect.b - content_rect.t;
+    if (w == 0 || h == 0) return;
+
+    bool cache_valid = win->cached_blur_valid &&
+                       win->cached_blur_w == w &&
+                       win->cached_blur_h == h &&
+                       win->cached_blur_x == (int)content_rect.l &&
+                       win->cached_blur_y == (int)content_rect.t;
+
+    if (!cache_valid) {
+        if (win->cached_blur) free(win->cached_blur);
+        win->cached_blur = malloc(w * h * sizeof(uint32_t));
+        if (!win->cached_blur) return;
+        win->cached_blur_w = w;
+        win->cached_blur_h = h;
+        win->cached_blur_x = content_rect.l;
+        win->cached_blur_y = content_rect.t;
+        win->cached_blur_valid = true;
+        compute_blur(&content_rect, win->cached_blur);
+    }
+}
+
+// Invalidate cached blur when window moves/resizes
+static void invalidate_cached_blur(Window* win) {
+    win->cached_blur_valid = false;
+}
+
+// Composite a single window onto the framebuffer with proper alpha blending
+// This draws: border, menu, and content (with alpha blending)
+// If skip_content is true, only draw borders and menu (for move optimization)
+static void composite_window(const Framebuffer* fb, const Window* win, const Rectangle* clip, bool skip_content) {
+    // Draw borders
     for(size_t i = 0; i < WINDOW_BORDER_COUNT; ++i) {
         Rectangle border_rect = window_get_border_rect(win, i);
-        if(rect_collides(&border_rect, rect)) {
-            Rectangle area = rect_collision_rect(&border_rect, rect);
+        if(rect_collides(&border_rect, clip)) {
+            Rectangle area = rect_collision_rect(&border_rect, clip);
             fill_rect(fb, &area, win->border_color);
         }
     }
-    Rectangle content_rect = window_get_content_rect(win);
-    if(rect_collides(&content_rect, rect)) {
-        Rectangle area = rect_collision_rect(&content_rect, rect);
-        size_t local_l = area.l - content_rect.l;
-        size_t local_t = area.t - content_rect.t;
-        size_t content_pitch_bytes = (content_rect.r - content_rect.l) * sizeof(*win->content);
-        Image image = {
-            .pixels = ((uint32_t*)(((uint8_t*)win->content) + (local_t * content_pitch_bytes))) + (local_l),
-            .width = area.r - area.l,
-            .height = area.b - area.t,
-            .pitch_bytes = (content_rect.r - content_rect.l) * sizeof(*win->content)
-        };
-        draw_image_no_alpha(fb, &image, area.l, area.t);
+    
+    // Draw content with alpha blending (skip during move for performance)
+    if (!skip_content) {
+        Rectangle content_rect = window_get_content_rect(win);
+        if(rect_collides(&content_rect, clip) && win->content) {
+            Rectangle area = rect_collision_rect(&content_rect, clip);
+            
+// Draw background for content area
+            if (win->has_transparency && win->blur_background && wallpaper_img.pixels) {
+                // Ensure cached blur is up to date
+                ensure_cached_blur((Window*)win);
+                
+                // Use cached blurred background
+                if (win->cached_blur && win->cached_blur_valid) {
+                    Rectangle content_rect = window_get_content_rect(win);
+                    Rectangle area = rect_collision_rect(&content_rect, clip);
+                    size_t local_l = area.l - content_rect.l;
+                    size_t local_t = area.t - content_rect.t;
+                    size_t aw = area.r - area.l;
+                    size_t ah = area.b - area.t;
+                    
+                    uint32_t* dst = (uint32_t*)(((uint8_t*)fb->pixels) + fb->pitch_bytes * area.t) + area.l;
+                    for (size_t y = 0; y < ah; ++y) {
+                        uint32_t* src_row = win->cached_blur + (local_t + y) * win->cached_blur_w + local_l;
+                        for (size_t x = 0; x < aw; ++x) {
+                            dst[x] = src_row[x];
+                        }
+                        dst = (uint32_t*)(((uint8_t*)dst) + fb->pitch_bytes);
+                    }
+                }
+            } else if (win->has_transparency) {
+                // Transparency without blur: just draw normal wallpaper
+                wallpaper_redraw_region(fb, &area);
+            } else {
+                // No transparency: draw wallpaper as base
+                wallpaper_redraw_region(fb, &area);
+            }
+            
+            // Composite window content with alpha blending
+            size_t local_l_content = area.l - content_rect.l;
+            size_t local_t_content = area.t - content_rect.t;
+            size_t content_pitch_bytes = (content_rect.r - content_rect.l) * sizeof(*win->content);
+            Image image = {
+                .pixels = ((uint32_t*)(((uint8_t*)win->content) + (local_t_content * content_pitch_bytes))) + (local_l_content),
+                .width = area.r - area.l,
+                .height = area.b - area.t,
+                .pitch_bytes = (content_rect.r - content_rect.l) * sizeof(*win->content)
+            };
+            
+            if (win->has_transparency) {
+                draw_image_alpha(fb, &image, area.l, area.t);
+            } else {
+                draw_image_no_alpha(fb, &image, area.l, area.t);
+            }
+        }
     }
+    
+    // Draw menu bar
     Rectangle menu_rect = window_get_menu_rect(win);
-    if(rect_collides(&menu_rect, rect)) {
-        Rectangle area = rect_collision_rect(&menu_rect, rect);
+    if(rect_collides(&menu_rect, clip)) {
+        Rectangle area = rect_collision_rect(&menu_rect, clip);
         menu_redraw_region(fb, win, &area);
     }
 }
 
 static void redraw_region(const Framebuffer* fb, const Rectangle* rect) {
-    // Clip to framebuffer
     Rectangle clipped = *rect;
     if(clipped.l > fb->width) clipped.l = fb->width;
     if(clipped.t > fb->height) clipped.t = fb->height;
@@ -425,12 +608,20 @@ static void redraw_region(const Framebuffer* fb, const Rectangle* rect) {
         if(rect_collides(&clipped, &win->rect)) {
             Rectangle area = rect_collision_rect(&clipped, &win->rect);
             
-            if(area.l != clipped.l) redraw_region(fb, &(Rectangle){clipped.l, clipped.t, area.l, clipped.b});
-            if(area.r != clipped.r) redraw_region(fb, &(Rectangle){area.r, clipped.t, clipped.r, clipped.b});
-            if(area.t != clipped.t) redraw_region(fb, &(Rectangle){clipped.l, clipped.t, clipped.r, area.t});
-            if(area.b != clipped.b) redraw_region(fb, &(Rectangle){clipped.l, area.b, clipped.r, clipped.b});
+            // رندر کردن قسمت‌های پشت پنجره
+            if(area.l != clipped.l) 
+                redraw_region(fb, &(Rectangle){clipped.l, clipped.t, area.l, clipped.b});
+            if(area.r != clipped.r) 
+                redraw_region(fb, &(Rectangle){area.r, clipped.t, clipped.r, clipped.b});
+            if(area.t != clipped.t) 
+                redraw_region(fb, &(Rectangle){clipped.l, clipped.t, clipped.r, area.t});
+            if(area.b != clipped.b) 
+                redraw_region(fb, &(Rectangle){clipped.l, area.b, clipped.r, clipped.b});
             
-            window_redraw_region(fb, win, &area);
+            // رندر کردن خود پنجره (با چک کردن معتبر بودن)
+            if (win && win->content) {
+                window_redraw_region(fb, win, &area, false);
+            }
             return;
         }
     }
@@ -438,9 +629,29 @@ static void redraw_region(const Framebuffer* fb, const Rectangle* rect) {
     wallpaper_redraw_region(fb, &clipped);
 }
 
-static void draw_window(const Framebuffer* fb, const Window* win) {
-    window_redraw_region(fb, win, &win->rect);
+static void window_redraw_region(const Framebuffer* fb, const Window* win, const Rectangle* rect, bool skip_content) {
+    // چک کردن اشاره‌گرها
+    if (!win || !win->content) return;
+    
+    composite_window(fb, win, rect, skip_content);
 }
+
+static void draw_window(const Framebuffer* fb, const Window* win) {
+    window_redraw_region(fb, win, &win->rect, false);
+}
+
+// Draw a simple wireframe rectangle (classic Windows 95/XP style drag outline)
+static void draw_drag_outline(const Framebuffer* fb, const Rectangle* rect, uint32_t color) {
+    // Top border
+    fill_rect(fb, &(Rectangle){rect->l, rect->t, rect->r, rect->t + 2}, color);
+    // Bottom border
+    fill_rect(fb, &(Rectangle){rect->l, rect->b - 2, rect->r, rect->b}, color);
+    // Left border
+    fill_rect(fb, &(Rectangle){rect->l, rect->t, rect->l + 2, rect->b}, color);
+    // Right border
+    fill_rect(fb, &(Rectangle){rect->r - 2, rect->t, rect->r, rect->b}, color);
+}
+
 static void move_window(const Framebuffer* fb, Window* win, size_t x, size_t y) {
     size_t w = win->rect.r - win->rect.l;
     size_t h = win->rect.b - win->rect.t;
@@ -448,23 +659,13 @@ static void move_window(const Framebuffer* fb, Window* win, size_t x, size_t y) 
     // Strict clamping - NEVER go off-screen
     if(x > fb->width - w) x = fb->width - w;
     if(y > fb->height - h) y = fb->height - h;
-    if((int)x < 0) x = 0;  // cast to int for comparison
+    if((int)x < 0) x = 0;
     if((int)y < 0) y = 0;
     
-    Rectangle old_rect = win->rect;
-    win->rect.r = (win->rect.l = x) + w;
-    win->rect.b = (win->rect.t = y) + h;
+    Rectangle new_rect = {x, y, x + w, y + h};
     
-    if(rect_collides(&old_rect, &win->rect)) {
-        Rectangle area = rect_collision_rect(&old_rect, &win->rect);
-        if(area.l != old_rect.l) redraw_region(fb, &(Rectangle){old_rect.l, old_rect.t, area.l, old_rect.b});
-        if(area.r != old_rect.r) redraw_region(fb, &(Rectangle){area.r, old_rect.t, old_rect.r, old_rect.b});
-        if(area.t != old_rect.t) redraw_region(fb, &(Rectangle){old_rect.l, old_rect.t, old_rect.r, area.t});
-        if(area.b != old_rect.b) redraw_region(fb, &(Rectangle){old_rect.l, area.b, old_rect.r, old_rect.b});
-    } else {
-        redraw_region(fb, &old_rect);
-    }
-    redraw_region(fb, &win->rect);
+    // Draw wireframe outline at new position (no blur, no content, very fast)
+    draw_drag_outline(fb, &new_rect, 0xFFFFFFFF);  // White outline
 }
 static void load_image_required(const char* path, Image* image) {
     if(!load_image(path, image)) exit(1);
@@ -633,9 +834,28 @@ void client_thread(void* client_void) {
             if(info.y == (uint32_t)-1) info.y = 100;
 
             window->border_thick = 2;
-            window->border_color = 0xC0C0C0;
-            window->menu_color = 0xC0C0C0;
+            window->border_color = 0x000000;
+            window->menu_color = 0x000000;
             window->menu_height = 16;
+            // Compositing defaults
+            window->alpha = 255;
+            window->has_transparency = false;
+            window->blur_background = false;
+            // Cached blur defaults
+            window->cached_blur = NULL;
+            window->cached_blur_w = 0;
+            window->cached_blur_h = 0;
+            window->cached_blur_x = 0;
+            window->cached_blur_y = 0;
+            window->cached_blur_valid = false;
+            // Apply window flags from client
+            if (info.flags & WM_WINDOW_FLAG_TRANSPARENT) {
+                window->has_transparency = true;
+                window->alpha = 255;  // Per-pixel alpha from content
+            }
+            if (info.flags & WM_WINDOW_FLAG_BLUR_BACKGROUND) {
+                window->blur_background = true;
+            }
 
             window->rect.l = info.x;
             window->rect.t = info.y;
@@ -815,6 +1035,7 @@ void client_thread(void* client_void) {
         if(window == moving_window) moving_window = NULL;
         Rectangle rect = window->rect;
         list_remove(&window->list);
+        if (window->cached_blur) free(window->cached_blur);
         free(window);
         redraw_region(&fb0, &rect);
     }
@@ -920,14 +1141,49 @@ void handle_mouse_event(int what, int x, int y, int button) {
                 wx = fb0.width - (moving_window->rect.r - moving_window->rect.l);
             if((size_t)wy + (moving_window->rect.b - moving_window->rect.t) > fb0.height)
                 wy = fb0.height - (moving_window->rect.b - moving_window->rect.t);
-            move_window(&fb0, moving_window, wx, wy);
+            // Just draw wireframe outline at new position (don't update window rect yet)
+            draw_drag_outline(&fb0, &(Rectangle){wx, wy, wx + (moving_window->rect.r - moving_window->rect.l), wy + (moving_window->rect.b - moving_window->rect.t)}, 0xFFFFFFFF);
+        } else {
+            redraw_region(&fb0, &rect);
+            draw_image(&fb0, &cursor, mouse_x, mouse_y);
+            flush_framebuffer(&fb0);
         }
-        redraw_region(&fb0, &rect);
-        draw_image(&fb0, &cursor, mouse_x, mouse_y);
-        flush_framebuffer(&fb0);
     } break;
     case GUI_MOUSE_EVENT_UP:
         if(button == MOUSE_BUTTON_CODE_LEFT) {
+            if (moving_window) {
+                // Move ended - restore old position background, move window, draw full window at new position
+                int wx = mouse_x - moving_window_dx, wy = mouse_y - moving_window_dy;
+                if(wx < 0) wx = 0;
+                if(wy < 0) wy = 0;
+                if((size_t)wx + (moving_window->rect.r - moving_window->rect.l) > fb0.width)
+                    wx = fb0.width - (moving_window->rect.r - moving_window->rect.l);
+                if((size_t)wy + (moving_window->rect.b - moving_window->rect.t) > fb0.height)
+                    wy = fb0.height - (moving_window->rect.b - moving_window->rect.t);
+                
+                Rectangle old_rect = moving_window->rect;
+                // Erase wireframe by restoring background at old position and new position
+                if (prev_wireframe_valid) {
+                    wallpaper_redraw_region(&fb0, &prev_wireframe);
+                    prev_wireframe_valid = false;
+                }
+                
+                // CRITICAL: Update window rect FIRST so redraw_region sees it at new position
+                moving_window->rect.l = wx;
+                moving_window->rect.t = wy;
+                moving_window->rect.r = wx + (old_rect.r - old_rect.l);
+                moving_window->rect.b = wy + (old_rect.b - old_rect.t);
+                
+                // Now redraw old position (window no longer there, wallpaper will be drawn)
+                redraw_region(&fb0, &old_rect);
+                // Redraw new position (window now there, will be drawn with full blur)
+                redraw_region(&fb0, &moving_window->rect);
+                
+                // Invalidate cache and redraw full window with blur
+                invalidate_cached_blur(moving_window);
+                draw_window(&fb0, moving_window);
+                flush_framebuffer(&fb0);
+            }
             moving_window = NULL;
             moving_window_dx = 0;
             moving_window_dy = 0;
@@ -1026,11 +1282,25 @@ void mouse_thread(void*) {
                         wx = fb0.width - (moving_window->rect.r - moving_window->rect.l);
                     if((size_t)wy + (moving_window->rect.b - moving_window->rect.t) > fb0.height)
                         wy = fb0.height - (moving_window->rect.b - moving_window->rect.t);
-                    move_window(&fb0, moving_window, wx, wy);
+                    
+                    Rectangle new_wireframe = {wx, wy, wx + (moving_window->rect.r - moving_window->rect.l), wy + (moving_window->rect.b - moving_window->rect.t)};
+                    
+                    // Erase previous wireframe by restoring background in that area
+                    if (prev_wireframe_valid) {
+                        wallpaper_redraw_region(&fb0, &prev_wireframe);
+                    }
+                    
+                    // Draw new wireframe
+                    draw_drag_outline(&fb0, &new_wireframe, 0xFFFFFFFF);
+                    
+                    // Track for next frame cleanup
+                    prev_wireframe = new_wireframe;
+                    prev_wireframe_valid = true;
+                } else {
+                    redraw_region(&fb0, &old_cursor);
+                    draw_image(&fb0, &cursor, mouse_x, mouse_y);
+                    flush_framebuffer(&fb0);
                 }
-                redraw_region(&fb0, &old_cursor);
-                draw_image(&fb0, &cursor, mouse_x, mouse_y);
-                flush_framebuffer(&fb0);
             } break;
             case MOUSE_EVENT_KIND_BUTTON:
                 handle_mouse_event(ev->as.button & MOUSE_BUTTON_ON_MASK ? GUI_MOUSE_EVENT_DOWN : GUI_MOUSE_EVENT_UP, -1, -1, ev->as.button & MOUSE_BUTTON_CODE_MASK);
@@ -1121,7 +1391,27 @@ void keyboard_thread(void*) {
         gtread(keyboard, &key, sizeof(key));
         key_set(&kb_state, key.code, key.attribs);
         if(key_unicode(&kb_state, key.code) == 'e' && key_get(&kb_state, MINOS_KEY_LEFT_ALT) && key_get(&kb_state, MINOS_KEY_LEFT_CTRL)) 
-            break; 
+            break;
+        
+        // Test shortcuts for compositing (only when windows exist)
+        if (!list_empty(&windows)) {
+            Window* window = (Window*)windows.next;
+            // Toggle transparency with Ctrl+T
+            if(key_unicode(&kb_state, key.code) == 't' && key_get(&kb_state, MINOS_KEY_LEFT_CTRL) && !(key.attribs & KEY_ATTRIB_RELEASE)) {
+                window->has_transparency = !window->has_transparency;
+                info("Transparency %s", window->has_transparency ? "enabled" : "disabled");
+                redraw_region(&fb0, &window->rect);
+                flush_framebuffer(&fb0);
+            }
+            // Toggle blur with Ctrl+B
+            if(key_unicode(&kb_state, key.code) == 'b' && key_get(&kb_state, MINOS_KEY_LEFT_CTRL) && !(key.attribs & KEY_ATTRIB_RELEASE)) {
+                window->blur_background = !window->blur_background;
+                info("Blur %s", window->blur_background ? "enabled" : "disabled");
+                redraw_region(&fb0, &window->rect);
+                flush_framebuffer(&fb0);
+            }
+        }
+        
         if(list_empty(&windows))
             continue;
         Window* window = (Window*)windows.next;

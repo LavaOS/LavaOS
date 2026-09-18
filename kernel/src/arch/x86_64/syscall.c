@@ -27,6 +27,8 @@
 #include "socket.h"
 #include "../../page.h"
 
+// #define CONFIG_LOG_SYSCALLS
+
 static intptr_t parse_path(Process* process, Path* res, const char* path) {
     switch(path[0]) {
     case '/':
@@ -519,8 +521,10 @@ intptr_t sys_truncate(uintptr_t handle, size_t size) {
     if(!res) return -INVALID_HANDLE;
     return inode_truncate(res->inode, size);
 }
-// TODO: strace
 intptr_t sys_epoll_create1(int flags) {
+#ifdef CONFIG_LOG_SYSCALLS
+    strace("sys_epoll_create1(%d)", flags);
+#endif
     // TODO: EPOLL_CLOEXEC I guess
     (void)flags;
     size_t id = 0;
@@ -534,7 +538,6 @@ intptr_t sys_epoll_create1(int flags) {
     }
     return id;
 }
-// TODO: strace
 intptr_t sys_epoll_ctl(int epfd, int op, int fd, const struct epoll_event *event) {
 #ifdef CONFIG_LOG_SYSCALLS
     strace("sys_epoll_ctl(%d, %d, %d, %p)", epfd, op, fd, event);
@@ -561,8 +564,10 @@ intptr_t sys_epoll_ctl(int epfd, int op, int fd, const struct epoll_event *event
     }
     return -INVALID_PATH;
 }
-// TODO: strace
 intptr_t sys_epoll_wait(int epfd, struct epoll_event *events, int maxevents, int timeout) {
+#ifdef CONFIG_LOG_SYSCALLS
+    strace("sys_epoll_wait(%d, %p, %d, %d)", epfd, events, maxevents, timeout);
+#endif
     if(maxevents < 0 || epfd < 0) return -INVALID_PARAM;
     Process* current = current_process();
     Resource* res = resource_find_by_id(current->resources, epfd);
@@ -588,8 +593,10 @@ intptr_t sys_epoll_wait(int epfd, struct epoll_event *events, int maxevents, int
     }
     return event_count;
 }
-// TODO: strace
 intptr_t sys_socket(uint32_t domain, uint32_t type, uint32_t prototype) {
+#ifdef CONFIG_LOG_SYSCALLS
+    strace("sys_socket(%04X, %04X, %04X)", domain, type, prototype);
+#endif
     (void)prototype; // <- prototype is unused
     if(domain >= _AF_COUNT) return -INVALID_PARAM;
     if(type != SOCK_STREAM) return -UNSUPPORTED_SOCKET_TYPE;
@@ -782,8 +789,14 @@ intptr_t sys_sysctl(uint32_t op, void* arg) {
     case SYSCTL_KERNEL_NAME:
         memcpy(arg, kernel.kname, sizeof(kernel.kname)-1);
         break;
+    case SYSCTL_KERNEL_ARCH:
+        memcpy(arg, kernel.karch, sizeof(kernel.karch)-1);
+        break;
     case SYSCTL_DISTRO_NAME:
         memcpy(arg, kernel.dname, sizeof(kernel.dname)-1);
+        break;
+    case SYSCTL_DISTRO_VER:
+        memcpy(arg, kernel.dver, sizeof(kernel.dver)-1);
         break;
     case SYSCTL_MEMINFO: {
         SysctlMeminfo* mem_info = arg;
@@ -799,11 +812,17 @@ intptr_t sys_sysctl(uint32_t op, void* arg) {
     return 0;
 }
 intptr_t sys_shutdown() {
+#ifdef CONFIG_LOG_SYSCALLS
+    strace1("sys_shutdown()");
+#endif
     do_poweroff_tasks();
     powr_shutdown();
     return 0;
 }
 intptr_t sys_reboot() {
+#ifdef CONFIG_LOG_SYSCALLS
+    strace1("sys_reboot()");
+#endif
     do_poweroff_tasks();
     powr_reboot();
     return 0;
@@ -825,9 +844,30 @@ intptr_t sys_stowr(void* key, void* new_value) {
     return 0;
 }
 intptr_t sys_printk(const char* x, ...) {
+#ifdef CONFIG_LOG_SYSCALLS
+    strace("sys_open(\"%s\")", x);
+#endif
     va_list args;
     va_start(args, x);
     vprintk(x, args);
     va_end(args);
+    return 0;
+}
+intptr_t sys_mkdir(const char* path) {
+#ifdef CONFIG_LOG_SYSCALLS
+    strace("sys_mkdir(\"%s\")", path);
+#endif
+    // if(!path) return -INVALID_PATH;
+    Path p;
+    Process* current = current_process();
+    intptr_t e;
+    if((e=parse_path(current, &p, path)) < 0) return e;
+
+    Inode* dir = NULL;
+    if((e = vfs_creat(&p, O_DIRECTORY, &dir)) < 0) {
+        printk("[MKDR] Could not mkdir %s : %s\n", path, status_str(e));
+        return e;
+    }
+    idrop(dir);
     return 0;
 }

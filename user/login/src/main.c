@@ -4,6 +4,8 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <unistd.h>
+#include <fcntl.h>
+
 extern char **environ;
 
 #define MAX_INPUT 64
@@ -26,12 +28,31 @@ static void read_input(char* buf, size_t max) {
     buf[i] = 0;
 }
 
+static void print_file(const char *path)
+{
+    int fd = open(path, O_RDONLY);
+
+    if (fd < 0) {
+        printf("[LGIN] Failed to open %s\n", path);
+        return;
+    }
+
+    char buf[256];
+    ssize_t n;
+
+    while ((n = read(fd, buf, sizeof(buf))) > 0) {
+        write(STDOUT_FILENO, buf, n);
+    }
+
+    close(fd);
+}
+
 int main(void) {
     char username[MAX_INPUT];
     char password[MAX_INPUT];
 
     const char* hostname = getenv("HOSTNAME");
-    if (!hostname) hostname = "lavaos";
+    if (!hostname) hostname = "(none)";
 
     while (true) {
         write(STDOUT_FILENO, hostname, strlen(hostname));
@@ -43,10 +64,6 @@ int main(void) {
 
         if (strcmp(username, "root") == 0 &&
             strcmp(password, "root") == 0) {
-
-            write(STDOUT_FILENO, "\nWelcome, ", 10);
-            write(STDOUT_FILENO, username, strlen(username));
-            write(STDOUT_FILENO, "!\n\n", 3);
 
             setenv("USER", username, 2);
 
@@ -67,6 +84,17 @@ int main(void) {
             }
             char* const argv[] = { (char*)path, NULL };
 
+            pid_t pid = fork();
+
+            if (pid == 0) {
+                char *argv[] = { "/user/cat", "/syscfg/motd", NULL };
+                execve("/user/cat", argv, environ);
+                _exit(127);
+            }
+
+            if (pid > 0)
+                waitpid(pid, NULL, 0);
+            
             execve(path, argv, environ);
 
             printf("[LGIN] Failed to start child\n");

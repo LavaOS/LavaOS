@@ -215,8 +215,45 @@ void printk_set_color(uint32_t fg, uint32_t bg) {
 }
 
 void printk_reset_color(void) {
-    printk_fg = 0xC0C0C0;
-    printk_bg = 0x000000;
+    printk_fg = VGA_FG;
+    printk_bg = VGA_BG;
+}
+
+void printl_ok(const char* fmt, ...) {
+    va_list args;
+    va_start(args, fmt);
+    printk_fg = 0x00FF00;
+    printk("[ OK ] ");
+    printk_reset_color();
+    vprintk(fmt, args);
+    va_end(args);    
+}
+void printl_wait(const char* fmt, ...) {
+    va_list args;
+    va_start(args, fmt);
+    printk_fg = 0xFFFF00;
+    printk("[WAIT] ");
+    printk_reset_color();
+    vprintk(fmt, args);
+    va_end(args);    
+}
+void printl_verb(const char* fmt, ...) {
+    va_list args;
+    va_start(args, fmt);
+    printk_fg = 0x00FFFF;
+    printk("[VERB] ");
+    printk_reset_color();
+    vprintk(fmt, args);
+    va_end(args);    
+}
+void printl_fail(const char* fmt, ...) {
+    va_list args;
+    va_start(args, fmt);
+    printk_fg = 0xFF0000;
+    printk("[FAIL] ");
+    printk_reset_color();
+    vprintk(fmt, args);
+    va_end(args);    
 }
 
 void kclear(uint32_t color) {

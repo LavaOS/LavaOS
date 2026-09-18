@@ -113,6 +113,10 @@
         <h3>⚡ 4. Run</h3>
         <code>./nob run</code>
       </td>
+      <td align="center" width="25%">
+        <h3>🔑 5. Login</h3>
+        <p>Login with user <code>root</code> and password <code>root</code></p>
+      </td>
     </tr>
   </table>
 </div>
@@ -176,12 +180,6 @@
     <td>dcraftbg</td>
     <td>MIT</td>
     <td><code>licenses/LICENSE.DIM</code></td>
-  </tr>
-  <tr>
-    <td><a href="https://github.com/amirh1385/Sinux">Sinux Kernel</a></td>
-    <td>amirh1385 (fork)</td>
-    <td>MIT</td>
-    <td><code>licenses/LICENSE.SINUX</code></td>
   </tr>
   <tr>
     <td><a href="https://github.com/torvalds/linux/tree/v3.0">Linux Kernel 3.0</a></td>

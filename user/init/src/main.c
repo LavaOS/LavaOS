@@ -6,8 +6,37 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <assert.h>
 
 int main(void);
+
+ssize_t readline(int fd, char *buf, size_t size)
+{
+    size_t pos = 0;
+
+    if (!buf || size == 0)
+        return -1;
+
+    while (pos < size - 1) {
+        char c;
+        ssize_t n = read(fd, &c, 1);
+
+        if (n < 0)
+            return n;
+
+        if (n == 0)
+            break;
+
+        if (c == '\n')
+            break;
+
+        buf[pos++] = c;
+    }
+
+    buf[pos] = '\0';
+
+    return (ssize_t)pos;
+}
 
 void _start(int argc, const char** argv, const char** envp) {
     const char* std = "/devices/tty0";
@@ -32,12 +61,39 @@ int main(void) {
     printf("\033[2J\033[H");
     fflush(stdout);
 
-    printf("[INIT] '/sbin/init' started!\n");
+    int sesfile = open("/syscfg/session", O_RDONLY);
+    int hfile = open("/syscfg/hostname", O_RDONLY);
+
+    if (sesfile < 0) {
+        fprintf(stderr, "Failed to open session\n");
+        return 1;
+    }
+    if (hfile < 0) {
+        fprintf(stderr, "Failed to open hostname\n");
+        return 1;
+    }
+
+    char sesline[256];
+    char hline[256];
+
+    if (readline(sesfile, sesline, sizeof(sesline)) < 0) {
+        fprintf(stderr, "Failed to read session\n");
+        close(sesfile);
+        return 1;
+    }
+    if (readline(hfile, hline, sizeof(hline)) < 0) {
+        fprintf(stderr, "Failed to read hostname\n");
+        close(hfile);
+        return 1;
+    }
 
     printf("[INIT] Setting environment...\n");
     setenv("PATH", "/user:/sbin:", 0);
-    setenv("HOSTNAME", "lavaos", 1);
-    setenv("SESSION", "desktop", 1);
+    setenv("HOSTNAME", hline, 1);
+    setenv("SESSION", sesline, 1);
+
+    close(sesfile);
+    close(hfile);
 
     const char* services[] = {
         "/etc/init.d/login",

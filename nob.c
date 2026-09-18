@@ -72,6 +72,7 @@ static bool build(Build*, Cmd* cmd) {
     if(!nob_mkdir_if_not_exists_silent("initrd/etc")) return false;
     if(!nob_mkdir_if_not_exists_silent("initrd/etc/init.d")) return false;
     if(!nob_mkdir_if_not_exists_silent("initrd/sys")) return false;
+    if(!nob_mkdir_if_not_exists_silent("initrd/syscfg")) return false;
     if(!nob_mkdir_if_not_exists_silent("initrd/include")) return false;
     setenv("BINDIR"   , nob_temp_realpath("bin"), 1);
     if(!getenv("CC")) setenv("CC"       , "cc", 1);
@@ -82,6 +83,7 @@ static bool build(Build*, Cmd* cmd) {
     if(!go_run_nob_inside(cmd, "kernel")) return false;
     if(!go_run_nob_inside(cmd, "user")) return false;
     if(!ustar_zip(cmd, "initrd", "bin/iso/initrd")) return false;
+    if(!ustar_zip(cmd, "syscfg", "bin/iso/syscfg")) return false;
     return make_iso(cmd);
 }
 static bool run(Build* build, Cmd* cmd) {
@@ -91,7 +93,7 @@ static bool run(Build* build, Cmd* cmd) {
         "-smp", "2",
         "-m", "128",
         "-cdrom", "./bin/OS.iso",
-	"-enable-kvm", "-cpu", "host"
+	"-machine", "q35", "-enable-kvm", "-cpu", "host"
     );
     if(build->uefi) {
         const char* ovmf = getenv("OVMF");

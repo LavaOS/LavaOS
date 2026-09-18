@@ -1,7 +1,7 @@
 #include <minos/status.h>
 static const char* status_map[] = {
     "OK",
-    [NOT_ENOUGH_MEM]     = "Not enough memory",
+    [NOT_ENOUGH_MEM]     = "Out of memory",
     [BAD_INODE]          = "Bad Inode",
     [INVALID_PARAM]      = "Invalid Param",
     [FILE_CORRUPTION]    = "File Corruption",

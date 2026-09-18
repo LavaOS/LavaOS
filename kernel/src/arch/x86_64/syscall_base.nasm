@@ -38,6 +38,7 @@ extern sys_stlup
 extern sys_stdel 
 extern sys_stowr
 extern sys_printk
+extern sys_mkdir
 %define KERNEL_UNSUPPORTED 7
 section .text
 global syscall_base
@@ -80,6 +81,7 @@ syscall_table:
    dq sys_stdel 
    dq sys_stowr
    dq sys_printk
+   dq sys_mkdir
 syscall_table_end:
 section .text
 global _irq_128

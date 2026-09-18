@@ -2,9 +2,9 @@
 // Then again a preboot will just fix all of this anyway so I'm postponing :)
 #include <limine.h>
 #include "log.h"
-#include "printk.h"
 #include "kpanic.h"
 #include "memory.h"
+#include "printk.h"
 
 static volatile struct limine_smp_request limine_smp_request = {
     .id = LIMINE_SMP_REQUEST,
@@ -31,7 +31,6 @@ void ap_main(struct limine_smp_info* info) {
             : "r" ((uintptr_t)kernel.pml4 & ~KERNEL_MEMORY_MASK)
         );
     // APIC divider of 16
-    printk("[CORE] Hello from logical processor %zu lapic_id %zu\n", info->lapic_id, get_lapic_id());
     enable_cpu_features();
     kernel.processors[info->lapic_id].initialised = true;
     lapic_timer_reload();
@@ -88,6 +87,4 @@ void init_smp(void) {
         info->extra_argument = (uintptr_t)((char*)stack + AP_STACK_SIZE);
         info->goto_address = (void*)&ap_init;
     }
-
-    printk("[SMP] Initialized %zu cores (BSP + %zu APs)\n", cpu_count, ap_count);
 }

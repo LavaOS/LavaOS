@@ -17,13 +17,12 @@ typedef struct Task Task;
 typedef struct {
     // Kernel details
     char *kname;
-    char *kver;
+    char *karch;
 
-    // Distro details (Currently LavaOS)
+    // Distro details
     char *dname;
-    char *dver;
-    // Codename
     char *dcode;
+    char *dver;
 
     Bitmap map;
     Mutex map_lock;

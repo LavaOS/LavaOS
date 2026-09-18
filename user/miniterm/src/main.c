@@ -83,11 +83,12 @@ int epoll_add_fd(int epollfd, int fd, int events) {
 int main(void) {
     PlutoInstance instance;
     pluto_create_instance(&instance);
-    size_t width = 800, height = 600;
+    size_t width = 1000, height = 600;
     int win = pluto_create_window(&instance, &(WmCreateWindowInfo) {
         .width = width,
         .height = height,
-        .title = "Hello bro"
+        .title = "Hello bro",
+        .flags = WM_WINDOW_FLAG_TRANSPARENT | WM_WINDOW_FLAG_BLUR_BACKGROUND,
     }, 16);
     int shm = pluto_create_shm_region(&instance, &(WmCreateSHMRegion) {
         .size = width*height*sizeof(uint32_t)
@@ -95,7 +96,7 @@ int main(void) {
     uint32_t* addr = NULL;
     assert(_shmmap(shm, (void**)&addr) >= 0);
     for(size_t i = 0; i < width*height; ++i) {
-        addr[i] = 0xFF444444;
+        addr[i] = 0xCC444444;  // 0xCC = ~80% alpha for transparency demo
     }
     // ARGB
     struct flanterm_context* ctx = flanterm_fb_init(

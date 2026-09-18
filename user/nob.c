@@ -4,10 +4,8 @@
 
 
 const char* projects[] = {
-    "librtc",
     "libsize",
     "libstui",
-    "time",
     "vi",
     "true",
     "false",
@@ -24,9 +22,11 @@ const char* projects[] = {
     "doomgeneric",
     "rendertest",
     "echo",
+    "mkdir",
+    "uname",
     "gtnet",
     "hello",
-    "minofetch",
+    "sysctl",
     "init",
     "login",
     "ls",

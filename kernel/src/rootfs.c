@@ -18,6 +18,7 @@ void init_rootfs(void) {
         kpanic("init_rootfs: Could not create %s : %s", path, status_str(e));
 
     const char* initrd = "/initrd";
+    const char* syscfg = "/syscfg";
     BootModule module;
     if(find_bootmodule(initrd, &module)) {
         if((e=ustar_unpack("/", module.data, module.size)) < 0) {
@@ -25,4 +26,10 @@ void init_rootfs(void) {
         }
     }
     else kpanic("Initrd not found");
+    if(find_bootmodule(syscfg, &module)) {
+        if((e=ustar_unpack("/syscfg/", module.data, module.size)) < 0) {
+            printk("Failed to unpack: %s into root: %s", initrd, status_str(e));
+        }
+    }
+    else kpanic("Syscfg not found");
 }

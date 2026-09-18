@@ -37,4 +37,5 @@ enum {
     SYS_STDEL,
     SYS_STOWR,
     SYS_PRINTK,
+    SYS_MKDIR,
 };

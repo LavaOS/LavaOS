@@ -1,5 +1,6 @@
 .clangd
 .mimocode/
+.kilo/
 bin/
 gcc/
 backup.py

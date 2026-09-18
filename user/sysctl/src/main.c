@@ -85,6 +85,9 @@ int main() {
     char distbuf[MAX_SYSCTL_NAME];
     e = _sysctl(SYSCTL_DISTRO_NAME, distbuf);
     if(e < 0) strcpy(distbuf, "Unknown");
+    char verbuf[MAX_SYSCTL_NAME];
+    e = _sysctl(SYSCTL_DISTRO_VER, verbuf);
+    if(e < 0) strcpy(verbuf, "Unknown");
     SysctlMeminfo meminfo = { 0 };
     e = _sysctl(SYSCTL_MEMINFO, &meminfo);
     if(e < 0) {
@@ -93,7 +96,7 @@ int main() {
         meminfo.used = 0;
     }
     opt("Kernel: %s\n", namebuf);
-    opt("Distro: %s\n", distbuf);
+    opt("Distro: %s v%s\n", distbuf, verbuf);
     opt("Memory: %ld MiB / %ld MiB\n", meminfo.used / MiB, meminfo.total / MiB);
     opt("\n");
     icon_row();

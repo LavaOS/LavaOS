@@ -1,0 +1,18 @@
+Welcome to LavaOS.
+
+LavaOS is a lightweight, open-source Unix-like operating system
+designed for simplicity, experimentation, and learning.
+
+This system is part of the LavaOS project. Please consult the
+documentation before modifying system components or configuration.
+
+Project website:
+  https://lavaos.github.io/getlavaos
+
+Online documentation:
+  https://lavaos.github.io/getlavaos/docs
+
+Source code:
+  https://github.com/LavaOS
+
+Have fun, experiment freely, and don't break the kernel.

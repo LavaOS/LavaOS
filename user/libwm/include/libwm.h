@@ -2,6 +2,10 @@
 #include <stdint.h>
 #include <stddef.h>
 
+// Window flags
+#define WM_WINDOW_FLAG_TRANSPARENT    (1 << 0)  // Window has alpha channel content
+#define WM_WINDOW_FLAG_BLUR_BACKGROUND (1 << 1) // Blur background behind window
+
 // Convenient wrapper
 #define WM_METHODS(T) \
     extern size_t min_##T##_size,\
