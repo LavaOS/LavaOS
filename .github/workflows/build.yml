@@ -20,13 +20,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          submodules: recursive
           fetch-depth: 0
 
-      - name: Install git and dependencies
+      - name: Install dependencies
         run: |
           pacman -Sy --noconfirm --needed \
-            git \
             base-devel \
             nasm \
             xorriso \
