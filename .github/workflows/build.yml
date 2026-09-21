@@ -1,0 +1,48 @@
+name: Build LavaOS ISO
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build ISO
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    container:
+      image: archlinux:latest
+      options: --user root
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install dependencies
+        run: |
+          pacman -Sy --noconfirm --needed \
+            base-devel \
+            nasm \
+            xorriso \
+            gcc \
+            make \
+            binutils \
+            grub \
+            mtools
+
+      - name: Build nob
+        run: cc nob.c -o nob
+
+      - name: Build OS
+        run: ./nob build
+
+      - name: Upload ISO artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: OS.iso
+          path: bin/OS.iso
+          retention-days: 7
