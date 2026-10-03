@@ -1,4 +1,5 @@
 #include <minos/sysstd.h>
+#include <minos/status.h>
 #include <stdio.h>
 
 int main(int argc, const char** argv) {
@@ -10,6 +11,10 @@ int main(int argc, const char** argv) {
         printf("Warning: Too much arguments!\n");
     }
 
-    syscall1(SYS_MKDIR, argv[1]);
+    intptr_t result = syscall1(SYS_MKDIR, argv[1]);
+    if (result < 0) {
+        printf("mkdir: cannot create directory '%s': %s\n", argv[1], status_str(result));
+        return 1;
+    }
     return 0;
 }

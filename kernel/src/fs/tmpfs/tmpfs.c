@@ -32,6 +32,7 @@ static void datablock_destroy(TmpfsData* data) {
 static Cache* tmpfs_inode_cache    = NULL;
 
 static TmpfsInode* tmpfs_new_inode(Superblock* sb, size_t size, uint8_t kind, void* data, const char* name, size_t namelen);
+static intptr_t tmpfs_find(Inode* dir, const char* name, size_t namelen, Inode** result);
 // NOTE: DOES NOT CLEANUP SUBENTRIES FOR DIRECTORIES.
 static void tmpfs_inode_destroy(TmpfsInode* inode) {
     TmpfsData* head = inode->data;
@@ -85,9 +86,13 @@ intptr_t tmpfs_socket_creat(Inode* parent, Inode* sock, const char* name, size_t
     }
     return 0;
 }
-// TODO: Check whether entry already exists or not
 static intptr_t tmpfs_creat(Inode* parent, const char* name, size_t namelen, oflags_t flags, Inode** result) {
     if(parent->type != STX_TYPE_DIR) return -IS_NOT_DIRECTORY;
+    Inode* existing = NULL;
+    if(tmpfs_find(parent, name, namelen, &existing) == 0) {
+        idrop(existing);
+        return -ALREADY_EXISTS;
+    }
     TmpfsInode* inode;
     if(flags & O_DIRECTORY) inode=directory_new(parent->superblock, name, namelen);
     else inode=file_new(parent->superblock, name, namelen);

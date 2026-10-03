@@ -865,7 +865,6 @@ intptr_t sys_mkdir(const char* path) {
 
     Inode* dir = NULL;
     if((e = vfs_creat(&p, O_DIRECTORY, &dir)) < 0) {
-        printk("[MKDR] Could not mkdir %s : %s\n", path, status_str(e));
         return e;
     }
     idrop(dir);
